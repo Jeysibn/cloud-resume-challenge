@@ -1,0 +1,19 @@
+{
+  "source_archive": "cloud-resume-visitor-function-e5069e4c-a19e-4f58-a58f-67be174ef055.zip",
+  "archive_sha256": "a296f25ea149cc6e25e67d905f8f99ee1161f20d239161482068e2f5c776f1a9",
+  "files": {
+    "lambda_function.py": {
+      "bytes": 1802,
+      "sha256": "593d28509ff9fd61a3a24bd24a5d0a6ed3b430edfbe4d1676f5e44b6950aef1d"
+    }
+  },
+  "runtime": {
+    "value": "python3.14",
+    "evidence": "Confirmed by repository owner; not encoded in ZIP"
+  },
+  "handler": {
+    "value": "lambda_function.lambda_handler",
+    "evidence": "Derived from recovered module and function; deployed setting not independently inspected"
+  },
+  "provenance_limit": "Source matches the owner-supplied deployment package byte-for-byte. No live AWS configuration or current deployed CodeSha256 was inspected."
+}

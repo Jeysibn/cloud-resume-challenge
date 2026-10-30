@@ -6,3 +6,11 @@ dist/
 .env.*.local
 playwright-report/
 test-results/
+
+# Local Python and Lambda packaging artifacts
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.zip
+.aws/
