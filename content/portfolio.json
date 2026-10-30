@@ -1,0 +1,861 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "last_updated": "2026-09-15",
+    "purpose": "Canonical approved portfolio content shared by the website and assistant knowledge build.",
+    "approved_sources": [
+      "profile",
+      "career",
+      "education",
+      "certifications",
+      "skills",
+      "experience",
+      "current_learning",
+      "projects"
+    ],
+    "ingestion_boundary": "Only fields named by the backend knowledge builder are approved. Repository files are never auto-ingested."
+  },
+  "navigation": [
+    {
+      "label": "Projects",
+      "id": "projects"
+    },
+    {
+      "label": "Experience",
+      "id": "experience"
+    },
+    {
+      "label": "Capabilities",
+      "id": "skills"
+    },
+    {
+      "label": "Credentials",
+      "id": "credentials"
+    },
+    {
+      "label": "Contact",
+      "id": "contact"
+    }
+  ],
+  "profile": {
+    "name": "Jerome Christian V. Ibon",
+    "preferred_name": "Jerome",
+    "github_handle": "Jeysibn",
+    "role": "Aspiring Cloud & DevOps Engineer",
+    "location": "Malolos, Bulacan, Philippines",
+    "email": "jeysibn@gmail.com",
+    "portfolio": "https://d31yy7ezo2w9ph.cloudfront.net/",
+    "github": "https://github.com/Jeysibn",
+    "linkedin": "https://www.linkedin.com/in/jeromeibon",
+    "identity_boundary": "This assistant represents and explains Jerome's portfolio; it is not Jerome."
+  },
+  "career": {
+    "current_status": "Actively job hunting while continuously upskilling through hands-on projects.",
+    "availability": "Available to start immediately.",
+    "target_roles": [
+      "Cloud Support Engineer",
+      "Junior DevOps Engineer",
+      "Junior Site Reliability Engineer",
+      "Entry-Level Cloud Engineer"
+    ],
+    "professional_summary": "Computer Engineering graduate and OCI-certified engineer building production-style cloud and Kubernetes infrastructure from provisioning through GitOps delivery and observability. Brings enterprise SaaS technical-support experience in cloud-based security environments plus current NOC monitoring and escalation experience, and is pursuing entry-level Cloud Support, DevOps, and Cloud Engineering roles.",
+    "direction": "Jerome is moving from technical support toward Cloud and DevOps engineering, applying troubleshooting, automation, repeatable infrastructure, and observability in personal projects.",
+    "experience_boundary": "Professional experience is enterprise SaaS technical support (official title DevOps Platform Engineer, with technical-support duties), an IT helpdesk internship, and a current NOC Engineer role at BB Wave Inc. covering operational monitoring, escalation, and triggering existing Jenkins pipelines for UAT and production deployments on morning shifts. Jerome does not claim to have designed or owned those pipelines. Kubernetes, GitOps, Terraform, and production-oriented cloud architecture are primarily demonstrated through personal projects."
+  },
+  "education": {
+    "degree": "Bachelor of Science in Computer Engineering",
+    "school": "National University Baliwag",
+    "location": "Baliwag, Bulacan",
+    "period": "August 2021 – August 2025",
+    "thesis": "IoT Integrated Consultation System for Enhanced Student-Faculty Interaction"
+  },
+  "certifications": [
+    {
+      "name": "Oracle Cloud Infrastructure (OCI) Foundations Associate",
+      "issuer": "Oracle",
+      "status": "earned",
+      "referenceUrl": "https://academy.oracle.com/en/resources-oracle-certifications.html"
+    },
+    {
+      "name": "Trend Vision One Server and Workload Protection Professional",
+      "issuer": "Trend Micro",
+      "status": "earned",
+      "referenceUrl": "https://www.trendmicro.com/en_us/business/services/support-services/education.html"
+    },
+    {
+      "name": "GitHub Foundations",
+      "issuer": "GitHub",
+      "status": "earned",
+      "referenceUrl": "https://docs.github.com/en/get-started/showcase-your-expertise-with-github-certifications/about-github-certifications"
+    },
+    {
+      "name": "HashiCorp Certified: Terraform Associate (004)",
+      "issuer": "HashiCorp",
+      "status": "in-progress",
+      "referenceUrl": "https://developer.hashicorp.com/certifications/infrastructure-automation"
+    }
+  ],
+  "skills": [
+    {
+      "label": "Cloud & virtualization",
+      "items": [
+        "Azure",
+        "AWS",
+        "Oracle Cloud Infrastructure",
+        "VMware vSphere",
+        "Proxmox"
+      ]
+    },
+    {
+      "label": "Containers & orchestration",
+      "items": [
+        "Kubernetes (k3s)",
+        "Docker",
+        "Helm"
+      ]
+    },
+    {
+      "label": "Infrastructure & delivery",
+      "items": [
+        "Terraform",
+        "GitHub Actions",
+        "Argo CD",
+        "Git",
+        "YAML"
+      ]
+    },
+    {
+      "label": "Observability",
+      "items": [
+        "Azure Application Insights",
+        "Log Analytics",
+        "Prometheus",
+        "Grafana"
+      ]
+    },
+    {
+      "label": "Systems & networking",
+      "items": [
+        "Linux",
+        "Windows Server",
+        "Active Directory",
+        "TCP/IP",
+        "DNS",
+        "VPN",
+        "SSH",
+        "RDP"
+      ]
+    },
+    {
+      "label": "Scripting, security & tools",
+      "items": [
+        "Python",
+        "Bash",
+        "PowerShell",
+        "Trend Vision One",
+        "Jira",
+        "ITIL"
+      ]
+    }
+  ],
+  "experience": [
+    {
+      "role": "NOC Engineer",
+      "organization": "BB Wave Inc.",
+      "location": "Taguig City",
+      "period": "July 2026 – Present",
+      "summary": "NOC operations role focused on operational monitoring and issue escalation, plus supporting UAT and production deployments on morning shifts.",
+      "highlights": [
+        "Performs operational monitoring and escalates issues.",
+        "On morning shifts, assists UAT and production deployments by triggering existing Jenkins pipelines."
+      ]
+    },
+    {
+      "role": "DevOps Platform Engineer (technical support scope)",
+      "organization": "TrendAI",
+      "location": "Pasig City",
+      "period": "August 2025 – February 2026",
+      "summary": "Official title was DevOps Platform Engineer; the assigned work was enterprise technical support across endpoint-security SaaS, hybrid Windows/Linux environments, networking, and cloud infrastructure.",
+      "highlights": [
+        "Resolved 80+ enterprise technical cases across network, system, and cloud infrastructure issues while working within SLA expectations.",
+        "Provisioned AWS environments including EC2, VPCs, security groups, subnets, and routing to reproduce customer scenarios.",
+        "Completed 640 hours of new-engineer training spanning enterprise networking, server administration, VMware vSphere, Azure fundamentals, and AWS fundamentals.",
+        "Produced customer-facing technical resolutions that also served as precise case documentation."
+      ]
+    },
+    {
+      "role": "IT Helpdesk Intern",
+      "organization": "Philippine Transmarine Carriers",
+      "location": "Makati City",
+      "period": "March 2025 – May 2025",
+      "summary": "Hands-on IT operations under senior staff supervision, focused on endpoint lifecycle, identity support, networking, and asset management.",
+      "highlights": [
+        "Assisted with Active Directory accounts, user access controls, network connectivity, and VPN troubleshooting.",
+        "Performed secure Windows workstation reformatting and redeployment following enterprise data-handling procedures.",
+        "Tracked IT assets and assisted with RAM and SSD upgrades that extended workstation lifecycle."
+      ]
+    }
+  ],
+  "current_learning": [
+    "Studying for HashiCorp Certified: Terraform Associate (004).",
+    "Advanced cloud networking and hybrid-cloud topologies.",
+    "Improving Kubernetes deployments and GitOps workflows with Helm and Argo CD.",
+    "Continuing to improve the Cloud-Backed Portfolio and Homelab GitOps environment while job hunting."
+  ],
+  "projects": [
+    {
+      "id": "cloud-portfolio",
+      "slug": "cloud-portfolio",
+      "title": "Cloud-Backed Portfolio",
+      "shortTitle": "Cloud Portfolio",
+      "category": "Serverless cloud platform",
+      "status": "Historical Azure implementation · AWS migration in progress",
+      "statusLabel": "AZURE HISTORY",
+      "repositoryUrl": "https://github.com/Jeysibn/portfolio",
+      "liveUrl": "https://jeysibn.github.io/",
+      "preview": {
+        "summary": "Historical Azure implementation: A React and TypeScript portfolio on GitHub Pages backed by Python 3.11 Azure Functions for health, visitor counting, and a provider-neutral AI assistant.",
+        "primaryOutcome": "Path-specific GitHub Actions publish the frontend and deploy Azure changes through OIDC, with post-deployment smoke checks.",
+        "flow": {
+          "label": "GitHub Pages → Azure Functions → Cosmos DB → App Insights",
+          "nodes": [
+            "WEB",
+            "API",
+            "STATE",
+            "OBSERVE"
+          ],
+          "accessible": "React and Vite on GitHub Pages, Python Azure Functions, Cosmos DB, and Application Insights telemetry."
+        },
+        "technologies": [
+          "React",
+          "TypeScript",
+          "Azure Functions",
+          "Terraform",
+          "GitHub Actions"
+        ]
+      },
+      "details": {
+        "summary": "Historical Azure project, retained as actual project history. This AWS migration uses a manually configured visitor API; AWS Terraform and CI/CD are not implemented. A portfolio that treats a personal website like a real service: infrastructure as code, automated delivery, serverless APIs, observability, deployment verification, and an AI assistant.",
+        "purpose": "Move beyond static hosting and demonstrate practical Cloud and DevOps engineering through a small, cost-conscious system that is automated, observable, and reproducible.",
+        "outcomes": [
+          "Serverless backend avoids idle application-server cost while keeping dynamic visitor and AI capabilities.",
+          "Terraform manages Azure infrastructure and keeps production configuration reviewable in Git.",
+          "GitHub Actions validates changes, authenticates to Azure with OIDC, deploys by path, and verifies backend health after deployment.",
+          "Application Insights and Log Analytics provide request, failure, latency, exception, and structured operational telemetry."
+        ],
+        "highlights": [
+          "Azure Functions Python v2 API with dedicated health, visitor-counter, and AI-assistant routes.",
+          "Cosmos DB persistence with hashed visitor identifiers and TTL-based cleanup for rate-limit records.",
+          "Remote Terraform state, protected production workflow, dependency auditing, and secret-safe OIDC deployment.",
+          "The frontend keeps AI provider branding neutral while the provider secret remains backend-only."
+        ],
+        "technologies": [
+          "React",
+          "TypeScript",
+          "Vite",
+          "Azure Functions",
+          "Cosmos DB",
+          "Terraform",
+          "GitHub Actions",
+          "Application Insights",
+          "Log Analytics"
+        ],
+        "architectureFlows": [
+          {
+            "label": "Runtime request",
+            "nodes": [
+              "Visitor",
+              "GitHub Pages",
+              "Azure Functions",
+              "Cosmos DB"
+            ]
+          },
+          {
+            "label": "Frontend delivery",
+            "nodes": [
+              "Git",
+              "GitHub Actions",
+              "GitHub Pages"
+            ]
+          },
+          {
+            "label": "Backend and infrastructure delivery",
+            "nodes": [
+              "Git",
+              "GitHub Actions",
+              "OIDC",
+              "Azure infrastructure"
+            ]
+          }
+        ]
+      },
+      "architecture": {
+        "diagrams": [
+          {
+            "id": "portfolio-runtime",
+            "title": "Runtime architecture",
+            "svg": "/architecture/portfolio/runtime.svg",
+            "description": "Container-level view of visitor traffic through GitHub Pages and Azure Functions, including state, the external AI provider, and Azure-native telemetry.",
+            "summary": [
+              "Visitors load the React and TypeScript application from GitHub Pages, then call the Python Azure Function over CORS-enabled HTTPS.",
+              "The Function App exposes health, visitor-counter, and portfolio-assistant routes; Cosmos DB stores counter and rate-limit state.",
+              "Application Insights sends request and exception telemetry to the dedicated Log Analytics workspace."
+            ]
+          },
+          {
+            "id": "portfolio-delivery",
+            "title": "Delivery & infrastructure",
+            "svg": "/architecture/portfolio/delivery.svg",
+            "description": "Path-specific delivery view showing validation, GitHub Pages publication, Azure OIDC deployment, Terraform provisioning, and post-deployment verification.",
+            "summary": [
+              "Pull requests validate the frontend, backend, dependencies, and Terraform plan before production changes are merged.",
+              "Frontend artifacts are published to the dedicated Pages repository; backend packages and Terraform changes reach Azure through federated OIDC.",
+              "Terraform state remains in a separate Azure Storage backend, while backend deployment finishes with health and visitor API smoke checks."
+            ]
+          }
+        ]
+      },
+      "knowledge": {
+        "purpose": "A small, cost-conscious portfolio platform that also demonstrates cloud and DevOps engineering through serverless APIs, Infrastructure as Code, automated delivery, observability, and deployment verification.",
+        "status_detail": "Live system and source-controlled project. The frontend is published at https://jeysibn.github.io/.",
+        "experience_boundary": "Personal portfolio project; it demonstrates production-oriented engineering practices but is not professional employment experience.",
+        "architecture": {
+          "frontend": "React and TypeScript single-page application built with Vite. The generated artifact is published to the Jeysibn/jeysibn.github.io repository and served by GitHub Pages.",
+          "backend": "Python 3.11 Azure Functions using the Python v2 programming model.",
+          "state": "Azure Cosmos DB NoSQL API with PortfolioDB, Counter, and VisitorIPs containers. Visitor and rate-limit identifiers are HMAC-derived before persistence; VisitorIPs has a 24-hour TTL.",
+          "infrastructure": "Terraform with AzureRM in Azure Korea Central; remote Terraform state is stored in Azure Blob Storage.",
+          "delivery": "GitHub Actions validates changes, uses GitHub OIDC federation with Microsoft Entra ID for Azure, publishes the frontend to the Pages repository, and runs backend smoke checks after deployment.",
+          "observability": "Workspace-based Application Insights and Log Analytics capture request, latency, failure, exception, and structured operational telemetry.",
+          "assistant": "The portfolio-specific assistant uses an OpenAI-compatible provider behind the backend; provider secrets remain server-side and the frontend uses neutral branding."
+        },
+        "security_decisions": [
+          "GitHub Actions uses short-lived OIDC tokens for Azure instead of a reusable Azure service-principal secret.",
+          "Visitor IPs are never persisted in plaintext; HMAC-derived identifiers support counting and rate limiting.",
+          "Request validation, bounded history, backend-authoritative hourly quota, and response sanitization protect the public assistant endpoint.",
+          "Secrets and Terraform state are kept outside the frontend bundle and public knowledge content."
+        ],
+        "ci_cd": "Development validation covers frontend typecheck/build, backend Ruff/pytest, and Terraform validation. Main merges use path-specific frontend, backend, and infrastructure deployment workflows with post-deployment verification.",
+        "infrastructure": "GitHub Pages, Azure Functions on the Consumption plan, Azure Cosmos DB, Application Insights, Log Analytics, Azure Blob Storage for Terraform state, and Azure Korea Central resources managed by Terraform.",
+        "observability": "Application Insights and Log Analytics receive Azure Function telemetry and privacy-conscious structured assistant events; deployment workflows verify health and the deployed revision without writing visitor analytics.",
+        "data_storage": "Cosmos DB stores the visitor counter and per-visitor rate-limit records. The frontend stores only the browser chat history and an opaque session routing identifier in sessionStorage.",
+        "engineering_decisions": [
+          "Serverless consumption hosting avoids an always-on application server for a low-traffic portfolio.",
+          "Behavior instructions stay separate from approved factual content so prompt changes and portfolio facts can be reviewed independently.",
+          "Runtime readiness is checked after deployment rather than inferred from package upload success."
+        ],
+        "operational_lessons": [
+          "Optional provider configuration must initialize lazily so unrelated Function routes remain indexable.",
+          "Operational telemetry should contain metadata rather than secrets or full visitor conversations.",
+          "Deployment success and dependency-backed runtime health are separate signals."
+        ],
+        "limitations": [
+          "The assistant depends on an external OpenAI-compatible provider and can be temporarily unavailable.",
+          "The AI question quota is per HMAC-derived visitor identity and hour, not a strict browser-session quota.",
+          "The portfolio corpus is small and currently uses deterministic retrieval; vector search is intentionally deferred."
+        ],
+        "claims_not_to_make": [
+          "Do not describe this as a high-scale or revenue-producing production platform.",
+          "Do not claim the assistant has live repository retrieval or a vector database.",
+          "Do not expose API keys, visitor IPs, Terraform state, or internal provider configuration."
+        ],
+        "source": {
+          "id": "project-cloud-portfolio",
+          "label": "Cloud-Backed Portfolio",
+          "url": "https://github.com/Jeysibn/portfolio",
+          "last_verified": "2026-09-15"
+        }
+      }
+    },
+    {
+      "id": "homelab-gitops",
+      "slug": "homelab-gitops",
+      "title": "Homelab GitOps Environment",
+      "shortTitle": "Homelab GitOps",
+      "category": "Kubernetes & GitOps",
+      "status": "Single-node topology · active lab",
+      "statusLabel": "ACTIVE LAB",
+      "repositoryUrl": "https://github.com/Jeysibn/homelab-gitops",
+      "preview": {
+        "summary": "A single-node k3s environment on a Terraform-provisioned Proxmox VM, with Calico bootstrap, Argo CD convergence, LAN ingress, storage, DNS, and observability.",
+        "primaryOutcome": "Bootstrap gates Argo CD on working Calico and cluster-network acceptance checks before App-of-Apps reconciliation from main.",
+        "flow": {
+          "label": "Terraform → bootstrap → Argo CD → workloads",
+          "nodes": [
+            "PROVISION",
+            "BOOTSTRAP",
+            "RECONCILE",
+            "RUN"
+          ],
+          "accessible": "Terraform provisions Proxmox, bootstrap establishes k3s and Calico, Argo CD reconciles the platform, and workloads run on the single-node cluster."
+        },
+        "technologies": [
+          "Terraform",
+          "Proxmox",
+          "k3s",
+          "Calico",
+          "Argo CD"
+        ]
+      },
+      "details": {
+        "summary": "A self-managed Kubernetes environment built around declarative infrastructure, GitOps delivery, continuous validation, and operational visibility.",
+        "purpose": "Build a practical environment where infrastructure and application state can be reproduced from code while reducing configuration drift and manual deployment work.",
+        "outcomes": [
+          "Terraform automates virtual-machine provisioning on Proxmox.",
+          "Argo CD reconciles Git-defined application state and supports self-healing delivery workflows.",
+          "CI quality gates render Helm templates, validate Kubernetes schemas, and catch configuration problems before deployment.",
+          "Prometheus and Grafana provide operational visibility across the cluster and workloads."
+        ],
+        "highlights": [
+          "Single-node k3s server on a Terraform-provisioned Ubuntu VM in Proxmox.",
+          "Calico is bootstrap-owned and overlay encapsulation is disabled for the current single-node topology.",
+          "App-of-Apps GitOps structure with ordered application deployment.",
+          "Declarative MetalLB, Traefik ingress, Pi-hole, Unbound, Longhorn, Prometheus, Loki, Alloy, and Grafana services."
+        ],
+        "technologies": [
+          "K3s",
+          "Calico",
+          "Argo CD",
+          "Terraform",
+          "Proxmox",
+          "Helm",
+          "GitHub Actions",
+          "MetalLB",
+          "Longhorn",
+          "Prometheus",
+          "Grafana"
+        ],
+        "architectureFlows": [
+          {
+            "label": "Provision & reconcile",
+            "nodes": [
+              "Terraform",
+              "Proxmox",
+              "Ubuntu VM",
+              "k3s + Calico",
+              "Argo CD",
+              "Workloads"
+            ]
+          },
+          {
+            "label": "LAN request",
+            "nodes": [
+              "LAN client",
+              "Pi-hole / Unbound",
+              "MetalLB / Traefik",
+              "k3s workloads"
+            ]
+          }
+        ]
+      },
+      "architecture": {
+        "diagrams": [
+          {
+            "id": "homelab-system",
+            "title": "Primary system architecture",
+            "svg": "/architecture/homelab/system.svg",
+            "description": "Container-level view of LAN traffic entering a single-node k3s cluster and the networking, storage, workload, and observability services operating inside it.",
+            "summary": [
+              "Pi-hole and Unbound provide LAN and recursive DNS; MetalLB exposes service addresses and Traefik routes HTTP and HTTPS traffic.",
+              "The current cluster is one k3s server on an Ubuntu virtual machine provisioned in Proxmox, with Calico providing pod networking.",
+              "Longhorn supplies persistent volumes, while Prometheus, Loki, Alloy, and Grafana provide metrics, logs, collection, and visualization."
+            ]
+          },
+          {
+            "id": "homelab-gitops",
+            "title": "GitOps & provisioning flow",
+            "svg": "/architecture/homelab/gitops.svg",
+            "description": "Delivery view showing GitHub validation, Terraform access through Tailscale, Proxmox provisioning, host bootstrap, and Argo CD reconciliation from main.",
+            "summary": [
+              "GitHub Actions validates shell, YAML, rendered Helm applications, Kubernetes schemas, and Terraform before changes progress.",
+              "Terraform uses the bpg/proxmox provider through Tailscale and keeps remote state in the HCP Terraform workspace.",
+              "Bootstrap installs k3s, Calico, network acceptance tests, and Argo CD; the root application then reconciles ordered Helm and manifest waves from main."
+            ]
+          }
+        ]
+      },
+      "knowledge": {
+        "purpose": "A personal home-lab environment for applying declarative infrastructure, Kubernetes, GitOps delivery, continuous validation, and operational visibility.",
+        "status_detail": "Active personal engineering project with a current single-node K3s topology.",
+        "experience_boundary": "Personal home-lab project, not professional production Kubernetes employment experience.",
+        "architecture": {
+          "virtualization": "Terraform provisions an Ubuntu virtual machine on a refurbished/repurposed Proxmox host.",
+          "cluster": "K3s currently runs as a single-node Kubernetes server. Calico provides pod networking; overlay encapsulation is disabled for this topology.",
+          "gitops": "Argo CD uses an App-of-Apps structure and sync waves to reconcile workloads from the main branch.",
+          "networking": "MetalLB provides LoadBalancer IP management, Traefik provides ingress, and Cert-Manager handles TLS. Pi-hole, Unbound, and ExternalDNS provide DNS-related services.",
+          "storage": "Longhorn provides CSI-backed persistent volumes, but high availability claims must be qualified because the cluster is single-node.",
+          "observability": "Prometheus, Loki, Alloy, and Grafana provide metrics, logs, collection, and visualization.",
+          "remote_access": "A Raspberry Pi 4B provides remote access through Tailscale and is not currently a Kubernetes node."
+        },
+        "ci_cd": "GitHub Actions validates shell scripts, YAML, rendered Helm applications, Kubernetes schemas, and Terraform. After merge, Argo CD detects drift and reconciles the cluster from main.",
+        "infrastructure": "Proxmox, Terraform, Ubuntu, K3s, Calico, Argo CD, Helm, MetalLB, Traefik, Cert-Manager, Longhorn, Pi-hole, Unbound, Prometheus, Loki, Alloy, and Grafana.",
+        "observability": "Prometheus collects metrics, Loki stores logs, Alloy routes telemetry, and Grafana provides operational dashboards for the homelab platform.",
+        "data_storage": "Longhorn-backed Kubernetes persistent volumes are used by stateful workloads; repository documentation also describes the service and storage topology.",
+        "security_decisions": [
+          "Bootstrap owns K3s and Calico because Argo CD requires a working network and DNS before it can reconcile.",
+          "The repository separates bootstrap infrastructure from Argo-managed platform/application services.",
+          "Some application credentials remain placeholders; future secret management is documented as work for SOPS, Sealed Secrets, or External Secrets."
+        ],
+        "engineering_decisions": [
+          "Network acceptance checks run before Argo CD installation.",
+          "The current single-node topology avoids Calico overlay encapsulation after a documented UDP Service/NAT incident.",
+          "The App-of-Apps registry keeps chart versions, values, namespaces, and sync waves reviewable in Git."
+        ],
+        "operational_lessons": [
+          "A blanket Calico UDP NOTRACK rule broke UDP Service NAT even while pod routing and TCP Service traffic worked.",
+          "Mixed CPU architectures in an earlier laptop/Raspberry Pi experiment exposed compatibility concerns.",
+          "The repository documents an intended under-15-minute rebuild path, but that duration is not a measured personal benchmark.",
+          "A single-node cluster is useful for learning and repeatability but is not equivalent to a highly available production cluster."
+        ],
+        "limitations": [
+          "Current Kubernetes topology is one node, so it has no node-level high availability.",
+          "Some credentials and deployment-owner work remain placeholders or documented gaps.",
+          "The under-15-minute recovery target is documented intent, not a verified measured result."
+        ],
+        "claims_not_to_make": [
+          "Do not describe it as Jerome professionally operating enterprise Kubernetes.",
+          "Do not call the single-node cluster highly available.",
+          "Do not call the Raspberry Pi a current K3s node.",
+          "Do not state that the rebuild time has been personally benchmarked."
+        ],
+        "source": {
+          "id": "project-homelab-gitops",
+          "label": "Homelab GitOps",
+          "url": "https://github.com/Jeysibn/homelab-gitops",
+          "last_verified": "2026-09-15"
+        }
+      }
+    },
+    {
+      "id": "monikey",
+      "slug": "monikey",
+      "title": "MoniKey",
+      "shortTitle": "MoniKey",
+      "category": "Personal finance tracker",
+      "status": "Private homelab · no authentication",
+      "statusLabel": "PRIVATE DEPLOYMENT",
+      "repositoryUrl": "https://github.com/Jeysibn/monikey",
+      "preview": {
+        "summary": "A personal finance tracker for cash, bank, e-wallet and credit-card accounts: a React frontend, a FastAPI API and PostgreSQL, deployed to a private homelab through GitHub Actions, GHCR and Argo CD.",
+        "primaryOutcome": "A card payment reduces card debt without being counted as a second expense, and every balance and monthly total is calculated in SQL from exact NUMERIC(12,2) amounts.",
+        "flow": {
+          "label": "Traefik → nginx / React → FastAPI → PostgreSQL",
+          "nodes": [
+            "INGRESS",
+            "WEB",
+            "API",
+            "DATABASE"
+          ],
+          "accessible": "Traefik routes the browser to the nginx-served React frontend and to the FastAPI API, which reads and writes PostgreSQL."
+        },
+        "technologies": [
+          "React",
+          "TypeScript",
+          "FastAPI",
+          "PostgreSQL",
+          "Argo CD"
+        ]
+      },
+      "details": {
+        "summary": "A personal finance tracker for recording accounts, income, expenses, credit-card purchases and card payments. It calculates balances, card debt, available credit and monthly totals from the ledger. It is a three-tier application that runs in a private homelab and has no authentication.",
+        "purpose": "Build a beginner-friendly three-tier application end to end, from schema and API to frontend, containers, CI and GitOps deployment, with correct credit-card accounting as the central rule.",
+        "outcomes": [
+          "Card purchases are categorized expenses and card payments are separate records, so a payment reduces the source account and the card debt without being counted as a second expense.",
+          "Money is stored as PostgreSQL NUMERIC(12,2) and sent as decimal strings; balances, card debt, available credit and monthly totals are calculated in SQL and the API, not in browser JavaScript.",
+          "GitHub Actions runs frontend lint, tests and build, database and API tests against a disposable PostgreSQL container, and container builds; on main it publishes SHA-tagged frontend and API images to GHCR.",
+          "Argo CD deploys the images from the separate homelab-gitops repository only after the image SHA there is changed by a reviewed Git change; the single-node k3s deployment passed readiness checks, a database restore into a temporary database, and rollout to the previous and current image SHAs."
+        ],
+        "highlights": [
+          "FastAPI with Pydantic validation and direct parameterized SQL through Psycopg 3 over four tables: accounts, categories, transactions and credit_card_payments.",
+          "Schema CHECK constraints, foreign keys and a case-insensitive unique account name, plus SQL accounting checks and API tests that run in a throwaway PostgreSQL container with fictional data.",
+          "React, TypeScript, Vite, Tailwind CSS v4 and a few shadcn/ui components, with a typed data-source layer that switches between an in-memory mock and the HTTP API through strict wire mappers.",
+          "The browser only calls same-origin /api: a Vite proxy locally, nginx in Compose and Traefik in the cluster, so the frontend code does not change between environments.",
+          "Documented limits: no authentication so it stays on a trusted private network, one node and one database replica, manual logical backups, a self-signed certificate, and unverified end-to-end browser and screen-reader checks."
+        ],
+        "technologies": [
+          "React",
+          "TypeScript",
+          "Vite",
+          "Tailwind CSS",
+          "FastAPI",
+          "PostgreSQL",
+          "Docker / Compose",
+          "nginx",
+          "GitHub Actions",
+          "GHCR",
+          "Argo CD",
+          "k3s",
+          "Traefik",
+          "Longhorn"
+        ],
+        "architectureFlows": [
+          {
+            "label": "Application request",
+            "nodes": [
+              "Browser",
+              "Traefik",
+              "FastAPI API",
+              "PostgreSQL"
+            ]
+          },
+          {
+            "label": "Delivery",
+            "nodes": [
+              "Git",
+              "GitHub Actions",
+              "GHCR image",
+              "GitOps image update",
+              "Argo CD",
+              "k3s"
+            ]
+          }
+        ]
+      },
+      "architecture": {
+        "diagrams": [
+          {
+            "id": "monikey-application",
+            "title": "Application architecture",
+            "svg": "/architecture/monikey/application.svg",
+            "description": "The private homelab deployment: Traefik terminates HTTPS and routes the browser to an nginx-served React frontend and to the FastAPI API, which is the only service that talks to PostgreSQL.",
+            "summary": [
+              "A browser on the trusted home network reaches one hostname, monikey.homelab.local, over HTTPS through the Traefik ingress.",
+              "Traefik sends / to the nginx frontend service and /api to the FastAPI backend service; each runs as a single Deployment replica.",
+              "FastAPI reads and writes a single PostgreSQL 17.6 pod, a one-replica StatefulSet on a 5 GiB Longhorn volume; the browser never connects to PostgreSQL and secrets stay in the cluster, not in Git."
+            ]
+          },
+          {
+            "id": "monikey-gitops",
+            "title": "CI/CD and GitOps deployment",
+            "svg": "/architecture/monikey/gitops.svg",
+            "description": "How a commit becomes a running deployment: GitHub Actions checks and publishes SHA-tagged images to GHCR, and Argo CD deploys them only after a reviewed change in the separate homelab-gitops repository.",
+            "summary": [
+              "GitHub Actions runs lint, tests and container builds on every push and pull request, and publishes SHA-tagged frontend and API images to GHCR when main passes.",
+              "Publishing an image does not deploy it: the image SHA in the homelab-gitops manifests has to change first, through a reviewed Git change rather than an automatic CI step.",
+              "Argo CD watches the homelab-gitops main branch with automated sync, pruning and self-healing, and reconciles the monikey namespace on the k3s cluster."
+            ]
+          },
+          {
+            "id": "monikey-database",
+            "title": "PostgreSQL schema",
+            "svg": "/architecture/monikey/database.svg",
+            "description": "The four tables defined in database/001_init.sql and the foreign keys between them.",
+            "summary": [
+              "accounts holds liquid accounts and credit cards; transactions records income and expense entries against an account and a category.",
+              "credit_card_payments has two references to accounts, a source account and a card account, and a CHECK that they differ.",
+              "Amounts are NUMERIC(12,2) and must be positive; there is no stored current balance, so balances and card debt are calculated from opening values, transactions and payments."
+            ]
+          }
+        ]
+      },
+      "knowledge": {
+        "purpose": "A personal finance tracker for accounts, income, expenses, credit-card purchases and card payments, built as a beginner-friendly three-tier application and run in a private homelab.",
+        "status_detail": "Version 1 is deployed to a private single-node homelab and is not a public demo. The repository records milestones 11 and 12 as complete. It has no authentication, and the readable project material uses fictional sample data only.",
+        "experience_boundary": "Personal engineering project, not professional production experience and not a service handling real users.",
+        "architecture": {
+          "frontend": "React, TypeScript, Vite, Tailwind CSS v4, selected shadcn/ui components and Lucide React, built to static assets and served by nginx. A typed data-source layer switches between an in-memory mock and the HTTP API.",
+          "api": "Python FastAPI with Pydantic validation, Psycopg 3 and direct parameterized SQL. Routes cover accounts, categories, transactions, credit-card payments, a monthly summary and live and ready health checks.",
+          "database": "PostgreSQL with four tables: accounts, categories, transactions and credit_card_payments. Category decides income versus expense; card payments are separate records. Balances and card debt are calculated, not stored.",
+          "background_work": "None. There is no message broker or background worker; the FastAPI API reads and writes PostgreSQL directly, and the cluster runs only the frontend, API and database workloads.",
+          "routing": "The browser calls same-origin /api. A Vite proxy handles it locally, nginx in Docker Compose, and Traefik in the cluster.",
+          "deployment": "A single-node k3s cluster managed by Argo CD from the separate homelab-gitops repository. Frontend and API are single-replica Deployments pinned to full-SHA images; PostgreSQL is a one-replica StatefulSet on a 5 GiB Longhorn volume behind a headless service; ingress is Traefik with a self-signed certificate."
+        },
+        "ci_cd": "GitHub Actions runs frontend lint, tests and build, database accounting checks and API tests against a disposable PostgreSQL container, and Docker build validation on pull requests and pushes to main. On main it publishes SHA-tagged frontend and API images to GHCR. Deployment needs a reviewed change of the image SHA in homelab-gitops; publishing an image does not deploy it.",
+        "infrastructure": "Docker Compose for local runs, nginx, GitHub Actions, GHCR, a single-node k3s cluster, Argo CD, Traefik, Longhorn and PostgreSQL 17.6, with Kubernetes manifests in the homelab-gitops repository.",
+        "security_decisions": [
+          "There is no authentication in version 1, so the writable deployment is restricted to a trusted private network and PostgreSQL has no public Service or ingress.",
+          "Runtime credentials live in a Kubernetes Secret outside Git.",
+          "Queries are parameterized and amounts are validated for scale and range before they are written.",
+          "A public portfolio demo would have to use sample data and a mock or read-only API; no writable public deployment is provided."
+        ],
+        "observability": "The API exposes live and ready health endpoints, which the Kubernetes probes use.",
+        "data_storage": "PostgreSQL stores all finance data in four tables on a Longhorn-backed volume. Money is NUMERIC(12,2) and travels as decimal strings. Backups are manual logical dumps; a dump was restored into a temporary database, but off-cluster backup retention and recovery of real data have not been verified.",
+        "engineering_decisions": [
+          "Exactly four tables with card payments kept separate from expenses, so paying a card does not double-count spending.",
+          "Exact decimal money in PostgreSQL with all authoritative calculations in SQL and the API rather than browser JavaScript.",
+          "FastAPI with direct SQL instead of an ORM, to keep request handling and queries easy to follow.",
+          "One same-origin app with relative /api requests, so the frontend behaves the same locally and in the cluster.",
+          "Docker Compose before Kubernetes, and one stateful PostgreSQL replica with a documented backup rather than high availability.",
+          "Image publication and deployment are separate steps, with Argo CD deploying only reviewed changes in the GitOps repository."
+        ],
+        "operational_lessons": [
+          "Cross-table rules, such as a card payment coming from a liquid account and going to a credit card, cannot be enforced by CHECK constraints alone and are validated in the API and covered by tests.",
+          "Pinning images by full commit SHA made rollout to the previous and current images checkable.",
+          "A database dump restored into a temporary database confirmed the schema and default categories, which is not the same as proving disaster recovery."
+        ],
+        "limitations": [
+          "No authentication; it must stay on a trusted private network and is not a public demo.",
+          "One Kubernetes node and one PostgreSQL replica, so it is not highly available.",
+          "Backups are manual logical dumps; scheduled off-cluster retention has not been verified.",
+          "The certificate is self-signed, so browsers may show a trust warning.",
+          "The full interactive React and API browser journey, automated browser tests, physical-device checks and screen-reader checks are recorded as unverified.",
+          "Banking integrations, recurring bills, investments and regular transfers are out of scope for version 1."
+        ],
+        "claims_not_to_make": [
+          "Do not claim MoniKey has authentication, multiple users, a public demo or handles real production financial data.",
+          "Do not claim high availability, tested disaster recovery, or off-cluster backups.",
+          "Do not claim a background worker, message broker, Fastify, Prisma, budgets, goals, recurring bills, imports or an offline mode; the earlier version had a different architecture and the current repository does not have these.",
+          "Do not claim that publishing an image deploys it, or that the end-to-end browser and accessibility checks have passed."
+        ],
+        "source": {
+          "id": "project-monikey",
+          "label": "MoniKey",
+          "url": "https://github.com/Jeysibn/monikey",
+          "last_verified": "2026-10-26"
+        }
+      }
+    },
+    {
+      "id": "noc-report",
+      "slug": "noc-report",
+      "title": "NOC Report Builder",
+      "shortTitle": "NOC Report",
+      "category": "Operations evidence & AI workflow",
+      "status": "Active development",
+      "statusLabel": "ACTIVE DEVELOPMENT",
+      "repositoryUrl": "https://github.com/Jeysibn/noc-report",
+      "preview": {
+        "summary": "An evolving NOC report builder that turns shift-scoped incidents and frozen evidence into validated analysis and deterministic web/DOCX reports.",
+        "primaryOutcome": "Claude supplies narrative reasoning; application-owned composition derives mandatory evidence coverage and report order from a frozen ReportSnapshot.",
+        "flow": {
+          "label": "frozen evidence → queue → analysis → composition",
+          "nodes": [
+            "EVIDENCE",
+            "QUEUE",
+            "ANALYZE",
+            "COMPOSE"
+          ],
+          "accessible": "Frozen evidence enters the job and RabbitMQ path, the bridge and sandbox run validated analysis, and application-owned composition creates the ReportDocument."
+        },
+        "technologies": [
+          "React",
+          "FastAPI",
+          "PostgreSQL",
+          "MinIO",
+          "RabbitMQ"
+        ]
+      },
+      "details": {
+        "summary": "An actively evolving NOC report builder with React and TypeScript, a FastAPI backend, evidence-aware domain models, a host-side Claude Code Bridge, sandboxed skill execution, and renderer-neutral report documents.",
+        "purpose": "Make operational reporting traceable: evidence is frozen and provenance is preserved, AI is bounded to narrative reasoning, and deterministic application code owns mandatory report facts and composition.",
+        "outcomes": [
+          "The API models shifts, incidents, evidence, OCR, jobs, analysis runs, reports, search, analytics, RBAC, and administration around a frozen report snapshot.",
+          "Transactional outbox rows are committed with jobs before dispatch to RabbitMQ; the host-side bridge consumes jobs and runs Claude skills inside a Docker sandbox.",
+          "The canonical Daily Report keeps Claude's plan narrative-only while Report Composition derives alert/log coverage, ordering, provenance, and required evidence from the frozen snapshot.",
+          "A renderer-neutral ReportDocument feeds both the web preview and DOCX output, so presentation formats share the same composed semantic document."
+        ],
+        "highlights": [
+          "React/Vite/Tailwind/Vitest frontend and FastAPI routes for auth/RBAC, shifts, incidents, evidence, OCR, jobs, analysis, reports, search, analytics, and administration.",
+          "PostgreSQL stores domain state and provenance; MinIO stores evidence/report/job artifacts; RabbitMQ carries durable job messages.",
+          "SkillSnapshot hashes, schema validation, object-reference allow-lists, job leases, retry/dead-letter controls, and bounded AI usage protect execution identity and evidence boundaries.",
+          "Current skills include log-triage-summary and daily-alert-report; the repository remains an active engineering project rather than a production claim."
+        ],
+        "technologies": [
+          "React",
+          "TypeScript",
+          "FastAPI",
+          "PostgreSQL",
+          "MinIO",
+          "RabbitMQ",
+          "Claude Code Bridge",
+          "Docker Sandbox"
+        ],
+        "architectureFlows": [
+          {
+            "label": "Application runtime",
+            "nodes": [
+              "Operator",
+              "React web",
+              "FastAPI",
+              "PostgreSQL / MinIO"
+            ]
+          },
+          {
+            "label": "Evidence → analysis → report",
+            "nodes": [
+              "Frozen evidence",
+              "Job + outbox",
+              "RabbitMQ",
+              "Bridge / sandbox",
+              "Report Composition",
+              "ReportDocument"
+            ]
+          }
+        ]
+      },
+      "architecture": {
+        "diagrams": [
+          {
+            "id": "noc-report-system",
+            "title": "Application & evidence architecture",
+            "svg": "/architecture/noc-report/system.svg",
+            "description": "Container-level view of the NOC Report Builder application, its evidence and persistence boundaries, and the report presentation surfaces.",
+            "summary": [
+              "Operators use the React web application to access FastAPI endpoints for shifts, incidents, evidence, analysis, reports, search, analytics, and administration.",
+              "PostgreSQL stores domain state, provenance, jobs, snapshots, and report metadata; MinIO stores immutable evidence and generated artifacts.",
+              "The composed semantic ReportDocument is consumed by both the web preview and the DOCX adapter, keeping presentation separate from report policy."
+            ]
+          },
+          {
+            "id": "noc-report-pipeline",
+            "title": "Evidence → AI analysis → report pipeline",
+            "svg": "/architecture/noc-report/ai-report-pipeline.svg",
+            "description": "Sequence-oriented delivery view showing transactional job creation, RabbitMQ dispatch, host-side bridge execution in a Docker sandbox, validated results, and deterministic report composition.",
+            "summary": [
+              "The API freezes the report snapshot and commits the Job plus OutboxEvent together; the outbox dispatcher publishes only after the transaction is durable.",
+              "RabbitMQ carries references rather than evidence bytes; the host-side Claude Code Bridge resolves the exact SkillSnapshot and runs it in a constrained Docker sandbox.",
+              "Validated results are persisted, then application-owned Report Composition materializes mandatory evidence and narrative into ReportDocument for web and DOCX output."
+            ]
+          }
+        ]
+      },
+      "knowledge": {
+        "purpose": "An evolving NOC report builder that keeps operational evidence traceable while bounding AI to supported narrative reasoning.",
+        "status_detail": "Active development project; repository maturity and current limitations should be stated rather than implying production deployment.",
+        "experience_boundary": "Personal engineering project.",
+        "architecture": {
+          "frontend": "React and TypeScript with Vite, Vitest, and Tailwind.",
+          "api": "FastAPI routes cover authentication/RBAC, shifts, incidents, evidence, OCR, jobs, analysis, reports, search, analytics, and administration.",
+          "persistence": "PostgreSQL stores domain state, provenance, jobs, snapshots, and report metadata; MinIO stores immutable evidence and generated artifacts.",
+          "queue": "Transactional outbox rows are committed with jobs before RabbitMQ dispatch. RabbitMQ carries references rather than evidence bytes.",
+          "ai_execution": "A host-side Claude Code Bridge resolves the exact SkillSnapshot and executes skills inside a Docker sandbox with validation and bounded usage.",
+          "composition": "Report Composition owns mandatory coverage, ordering, provenance, and evidence. Claude produces a narrative-only ReportPlan, and a renderer-neutral ReportDocument feeds web preview and DOCX output."
+        },
+        "ci_cd": "The repository includes automated validation, unit/integration coverage, sandbox/bridge checks, and gated live benchmarks; the project remains under active development.",
+        "infrastructure": "React/Vite, FastAPI, PostgreSQL, MinIO, RabbitMQ, a Claude Code Bridge, and Docker sandbox execution.",
+        "security_decisions": [
+          "SkillSnapshot hashes and schema validation preserve execution identity.",
+          "Object-reference allow-lists prevent generated results from inventing evidence references.",
+          "Job leases, retry/dead-letter controls, bounded AI use, RBAC, and provenance tracking constrain operational automation."
+        ],
+        "observability": "Jobs, analysis runs, report metadata, evidence provenance, request IDs, and execution snapshots provide traceability across the workflow.",
+        "data_storage": "PostgreSQL is the domain/provenance store; MinIO stores evidence and report/job artifacts; RabbitMQ carries durable job messages and references.",
+        "engineering_decisions": [
+          "The application, not Claude, derives mandatory report facts from the frozen ReportSnapshot.",
+          "A renderer-neutral semantic document keeps web and DOCX output consistent.",
+          "The job/outbox transaction prevents dispatching work that was not durably recorded."
+        ],
+        "operational_lessons": [
+          "AI is most trustworthy when evidence, coverage, and composition remain application-owned.",
+          "Reference allow-lists and snapshot hashes make generated analysis explainable and reproducible.",
+          "A queue message should identify frozen evidence rather than copying the evidence payload."
+        ],
+        "limitations": [
+          "The repository is active development and does not establish a production NOC deployment claim.",
+          "Claude owns supported narrative reasoning only; it does not determine mandatory report facts or evidence coverage.",
+          "Some benchmark and execution paths are deliberately gated because they consume external model usage."
+        ],
+        "claims_not_to_make": [
+          "Do not say Claude determines mandatory report facts; deterministic Report Composition does.",
+          "Do not confuse this project's RabbitMQ queue with MoniKey's PostgreSQL worker scheduler.",
+          "Do not claim a production NOC service or measured operational outcome without repository evidence."
+        ],
+        "source": {
+          "id": "project-noc-report",
+          "label": "NOC Report Builder",
+          "url": "https://github.com/Jeysibn/noc-report",
+          "last_verified": "2026-09-15"
+        }
+      }
+    }
+  ]
+}
