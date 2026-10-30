@@ -33,7 +33,7 @@ CloudFront serves the React/TypeScript/Vite bundle stored in the private S3 buck
 | API Gateway | HTTP API `cloud-resume-visitor-api` | Routes and working GET/POST reported by user |
 | API endpoint | `https://10lm4byr49.execute-api.ap-southeast-2.amazonaws.com` | Tested from local React; CloudFront-origin GET passed |
 | Routes | `GET /visits`, `POST /visits` | Both routes exist |
-| Lambda | `cloud-resume-visitor-function` (Python 3.14) | Runtime owner-confirmed; recovered code in backend/lambda; live code equality not independently verified |
+| Lambda | `cloud-resume-visitor-function` (Python 3.14) | Runtime owner-confirmed; recovered backend source and owner-reported exact deployed ZIP CodeSha256 match for $LATEST |
 | DynamoDB | `cloud-resume-visitor-counter`; item `id = visitors`, attribute `count` | User confirmed count changed 7 → 8 |
 | Monitoring | CloudWatch logs for Lambda | Log details and current retention not independently verified |
 | Cost alert | User-configured alert threshold of USD 5/month | Alert is **not** a hard cost cap |
@@ -79,8 +79,7 @@ See [deployment runbook](deployment-runbook.md) and [validation record](validati
 The original [`lambda_function.lambda_handler`](../backend/lambda/lambda_function.py)
 was copied byte-for-byte from the owner-supplied deployment ZIP. Python 3.14 is
 owner-confirmed. The [provenance record](../backend/source-provenance.json) records
-archive/source hashes; a fresh trusted export or deployed code/configuration
-evidence is still needed to establish equality with the live integration target.
+archive/source hashes. On 2026-10-30 the owner reported that API Gateway targets the\nunqualified Lambda (`$LATEST`) and that AWS `CodeSha256` exactly matched the ZIP's\nexpected fingerprint; this is strong at-the-time package-equivalence evidence,\nthough the AWS data was not independently fetched here.
 
 GET calls GetItem with ConsistentRead=True on id=visitors. POST calls UpdateItem
 with `SET #counter = #counter + :inc`, `:inc=1`, an existing-item condition and
