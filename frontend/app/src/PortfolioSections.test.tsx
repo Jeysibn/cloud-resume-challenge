@@ -1,17 +1,18 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Contact, Credentials, Projects, Resume } from "./sections/PortfolioSections";
+import { Contact, Credentials, Projects } from "./sections/PortfolioSections";
 
 afterEach(cleanup);
 
-describe("Contact handoff", () => {
-  it("renders the primary email actions and engineering presence links", () => {
+describe("Contact", () => {
+  it("renders the email, availability and profile links without extra copy", () => {
     render(<Contact />);
 
     expect(screen.getByRole("heading", { name: "Contact" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Interested in working together?" })).toBeInTheDocument();
-    expect(screen.getByText("Open to opportunities")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 3 })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /print|save/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Open to opportunities. Available to start immediately.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Email jeysibn@gmail.com" })).toHaveAttribute(
       "href",
       "mailto:jeysibn@gmail.com",
@@ -50,18 +51,6 @@ describe("Contact handoff", () => {
       "Copied",
     );
     expect(screen.getByText("Email copied.")).toBeVisible();
-  });
-});
-
-describe("Resume actions", () => {
-  it("keeps the PDF download while removing the print/save action", () => {
-    render(<Resume />);
-
-    expect(screen.queryByRole("button", { name: /print|save/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Download PDF" })).toHaveAttribute(
-      "download",
-      "Jerome-Ibon-Resume.pdf",
-    );
   });
 });
 

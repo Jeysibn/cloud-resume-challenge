@@ -18,6 +18,7 @@ describe("legacy hash redirect", () => {
 
   it("maps removed anchors to the section that now holds the content", () => {
     expect(resolveLegacyHash("#about")).toBe("top");
+    expect(resolveLegacyHash("#resume")).toBe("contact");
     expect(resolveLegacyHash("#credentials-title")).toBe("credentials");
     expect(resolveLegacyHash("#projects")).toBeNull();
     expect(resolveLegacyHash("#%E0%A4%A")).toBeNull();

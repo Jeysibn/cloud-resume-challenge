@@ -75,8 +75,8 @@ export function SiteHeader({
         ))}
         <a
           className="nav-resume"
-          href="#resume"
-          aria-current={activeSection === "resume" ? "location" : undefined}
+          href="./resume.pdf"
+          download="Jerome-Ibon-Resume.pdf"
           onClick={() => setOpen(false)}
         >
           Resume
@@ -85,8 +85,8 @@ export function SiteHeader({
       <div className="header-tools">
         <a
           className="header-resume"
-          href="#resume"
-          aria-current={activeSection === "resume" ? "location" : undefined}
+          href="./resume.pdf"
+          download="Jerome-Ibon-Resume.pdf"
         >
           Resume
         </a>

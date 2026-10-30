@@ -8,7 +8,6 @@ import {
   profile,
   professionalSummary,
   projects,
-  skillGroups,
 } from "../portfolio";
 import type { Project } from "../portfolio";
 import { SkillGroups } from "../components/capabilities/SkillGroups";
@@ -61,8 +60,8 @@ export function Hero() {
         <a className="action-primary" href="#projects">
           View work <Arrow dir="down" />
         </a>
-        <a className="action-secondary" href="#resume">
-          Resume
+        <a className="action-secondary" href="./resume.pdf" download="Jerome-Ibon-Resume.pdf">
+          Resume <Arrow dir="down" />
         </a>
         <a
           className="hero-link"
@@ -210,53 +209,6 @@ export function Credentials() {
   );
 }
 
-export function Resume() {
-  return (
-    <Section id="resume" title="Resume" eyebrow="Download" number="05">
-      <div className="resume-band">
-        <div>
-          <h3>Everything important, ready to take with you.</h3>
-          <p>{professionalSummary}</p>
-        </div>
-        <div>
-          <a
-            className="action-primary"
-            href="./resume.pdf"
-            download="Jerome-Ibon-Resume.pdf"
-          >
-            Download PDF
-          </a>
-        </div>
-        <details>
-          <summary>Review resume details</summary>
-          <div className="resume-detail-grid">
-            <div>
-              <h4>Experience</h4>
-              {experience.map((x) => (
-                <p key={x.role}>
-                  <strong>{x.role}</strong>
-                  <br />
-                  {x.organization} · {x.period}
-                </p>
-              ))}
-            </div>
-            <div>
-              <h4>Education</h4>
-              <p>
-                {education.degree}
-                <br />
-                {education.school}
-              </p>
-              <h4>Skills</h4>
-              <p>{skillGroups.flatMap((x) => x.items).join(" · ")}</p>
-            </div>
-          </div>
-        </details>
-      </div>
-    </Section>
-  );
-}
-
 type CopyState = "idle" | "copying" | "copied" | "error";
 
 function copyTextFallback(value: string) {
@@ -330,81 +282,72 @@ export function Contact() {
   }[copyState];
 
   return (
-    <Section id="contact" title="Contact" eyebrow="Get in touch" number="06" className="contact-section">
-      <div className="contact-handoff">
-        <div className="contact-intent">
-          <h3>Interested in working together?</h3>
-          <p>
-            I&apos;m open to entry-level Cloud Engineering, DevOps and Cloud
-            Support opportunities where I can work on infrastructure, delivery
-            automation, Kubernetes and observable systems.
-          </p>
-          <p className="contact-availability">
-            <span className="status-light online" aria-hidden="true" />
-            <span>Open to opportunities</span>
-            <small>{career.availability}</small>
-          </p>
-        </div>
-        <div className="contact-primary-channel">
-          <span className="contact-label">Primary channel</span>
-          <a
-            href={`mailto:${profile.email}`}
-            className="contact-email"
-            aria-label={`Email ${profile.email}`}
-          >
-            {profile.email}
+    <Section id="contact" title="Contact" eyebrow="Get in touch" number="05" className="contact-section">
+      <div className="contact-block">
+        <a
+          href={`mailto:${profile.email}`}
+          className="contact-email"
+          aria-label={`Email ${profile.email}`}
+        >
+          {profile.email}
+        </a>
+        <p className="contact-availability">
+          <span className="status-light online" aria-hidden="true" />
+          <span>Open to opportunities. {career.availability}</span>
+        </p>
+        <div className="contact-actions">
+          <a className="action-primary" href={`mailto:${profile.email}`}>
+            Send email <Arrow dir="right" />
           </a>
-          <div className="contact-actions">
-            <a className="action-primary" href={`mailto:${profile.email}`}>
-              Send email <Arrow dir="right" />
-            </a>
-            <button
-              className="action-secondary"
-              type="button"
-              onClick={copyEmail}
-              disabled={copyState === "copying"}
-              aria-label={
-                copyState === "copied" ? "Email copied" : "Copy email"
-              }
+          <button
+            className="action-secondary"
+            type="button"
+            onClick={copyEmail}
+            disabled={copyState === "copying"}
+            aria-label={copyState === "copied" ? "Email copied" : "Copy email"}
+          >
+            {copyState === "copied" ? (
+              <>Copied <span aria-hidden="true">✓</span></>
+            ) : copyState === "copying" ? (
+              "Copying…"
+            ) : (
+              "Copy email"
+            )}
+          </button>
+        </div>
+        <p className="contact-copy-status" aria-live="polite" aria-atomic="true">
+          {copyStatus}
+        </p>
+        <ul className="contact-links">
+          <li>
+            <a
+              className="text-link"
+              href={profile.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="LinkedIn (opens in a new tab)"
             >
-              {copyState === "copied" ? (
-                <>Copied <span aria-hidden="true">✓</span></>
-              ) : copyState === "copying" ? (
-                "Copying…"
-              ) : (
-                "Copy email"
-              )}
-            </button>
-          </div>
-          <p className="contact-copy-status" aria-live="polite" aria-atomic="true">
-            {copyStatus}
-          </p>
-        </div>
+              LinkedIn <Arrow dir="out" />
+            </a>
+          </li>
+          <li>
+            <a
+              className="text-link"
+              href={profile.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="GitHub (opens in a new tab)"
+            >
+              GitHub <Arrow dir="out" />
+            </a>
+          </li>
+          <li>
+            <a className="text-link" href="./resume.pdf" download="Jerome-Ibon-Resume.pdf">
+              Resume <Arrow dir="down" />
+            </a>
+          </li>
+        </ul>
       </div>
-      <nav className="contact-links" aria-label="Engineering presence">
-        <span className="contact-links-label">Engineering presence</span>
-        <div className="contact-links-list">
-          <a
-            href={profile.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="LinkedIn (opens in a new tab)"
-          >
-            LinkedIn <Arrow dir="out" />
-          </a>
-          <a href="./resume.pdf" download="Jerome-Ibon-Resume.pdf">
-            Resume <Arrow dir="down" />
-          </a>
-          <a
-            href={profile.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="GitHub (opens in a new tab)"
-          >
-            GitHub <Arrow dir="out" />
-          </a>
-        </div>
-      </nav>
     </Section>
   );
 }

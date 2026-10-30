@@ -7,7 +7,6 @@ import {
   Experience,
   Hero,
   Projects,
-  Resume,
   Skills,
 } from "./sections/PortfolioSections";
 
@@ -39,7 +38,7 @@ describe("home navigation", () => {
       ["Experience", "#experience"],
       ["Toolkit", "#skills"],
       ["Contact", "#contact"],
-      ["Resume", "#resume"],
+      ["Resume", "./resume.pdf"],
     ]);
   });
 
@@ -61,14 +60,14 @@ describe("home navigation", () => {
         <Experience />
         <Skills onOpen={vi.fn()} />
         <Credentials />
-        <Resume />
         <Contact />
       </>,
     );
-    for (const id of ["projects", "experience", "skills", "credentials", "resume", "contact"]) {
+    for (const id of ["projects", "experience", "skills", "credentials", "contact"]) {
       expect(document.getElementById(id), `#${id}`).not.toBeNull();
     }
     expect(document.getElementById("about")).toBeNull();
+    expect(document.getElementById("resume")).toBeNull();
   });
 });
 
@@ -78,7 +77,8 @@ describe("hero", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Jerome Christian Ibon" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /View work/ })).toHaveAttribute("href", "#projects");
-    expect(screen.getByRole("link", { name: "Resume" })).toHaveAttribute("href", "#resume");
+    expect(screen.getByRole("link", { name: /Resume/ })).toHaveAttribute("href", "./resume.pdf");
+    expect(screen.getByRole("link", { name: /Resume/ })).toHaveAttribute("download", "Jerome-Ibon-Resume.pdf");
     expect(screen.getByRole("link", { name: "GitHub (opens in a new tab)" })).toHaveAttribute(
       "href",
       "https://github.com/Jeysibn",
