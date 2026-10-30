@@ -5,11 +5,14 @@ This milestone changes only the frontend. No AWS resources were provisioned, cha
 ## Contract to confirm before deployment
 
 The user supplied GET /visits (read only) and POST /visits (atomic increment).
-This checkout has no Lambda source or AWS response examples. The client assumes GET
-returns JSON `{ "count": 42 }`, with a nonnegative safe integer. Confirm this with
-an actual response before publishing. POST accepts an empty request body; confirm
-that the deployed route supports this. Any successful 2xx POST triggers a GET
-refresh; its response body is deliberately ignored.
+Recovered source is now version-controlled in `../../backend/lambda/lambda_function.py`.
+It confirms GET returns JSON `{ "count": 42 }` and POST does not require a body.
+POST success returns `{ "message": "Visitor counter incremented", "count": 43 }`;
+the client ignores that body and refreshes with GET. The frontend requires a
+nonnegative safe integer. The backend converts with int() but does not enforce
+that range, so valid stored count data remains a requirement. See
+[backend recovery and provenance](../../backend/README.md). Live deployment
+matching, gateway/CORS behavior and actual stored values remain unverified.
 
 The counter counts recorded actions, not unique visitors. There is no POST on mount.
 One POST attempt is allowed per mounted counter, including after failure. Reloading
@@ -51,8 +54,9 @@ AWS CORS reference: https://docs.aws.amazon.com/apigateway/latest/developerguide
 ## Remaining information and content review
 
 The invoke URL has been supplied in ignored local configuration. Still unverified:
-actual GET JSON, empty-body POST support, allowed frontend origins, authorization
-requirements, and live integration behavior.
+allowed frontend origins, authorization requirements, actual counter data,
+source-to-live deployment matching, and live integration behavior. GET JSON and
+body-free POST support are confirmed against the recovered source.
 No real API calls were made. The production build without configuration intentionally
 shows an unavailable state.
 

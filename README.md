@@ -35,6 +35,9 @@ The React app is built with Vite and deployed from `frontend/app/dist/` to the *
 ## Repository
 
 - `frontend/app/` — React/TypeScript/Vite frontend; see `AWS-INTEGRATION.md` for application integration.
+- `backend/lambda/lambda_function.py` — original recovered Python handler.
+- `backend/README.md` — runtime, configuration, mocked tests and manual deployment.
+- `backend/source-provenance.json` — supplied ZIP and source hashes; live equivalence limits.
 - `content/portfolio.json` — portfolio content.
 - `docs/architecture.md` — AWS components, data flow, trust boundaries and unverified Console settings.
 - `docs/deployment-runbook.md` — manual build, upload, invalidation, verification and rollback.
@@ -89,3 +92,21 @@ On 2026-10-30 the owner reported a working live React site, successful asset req
 1. Record unverified AWS Console settings in the documentation (without exposing secrets).
 2. Review and merge the Version 1 migration/documentation branch after approval.
 3. Begin Version 2 by implementing Terraform and CI/CD as separate, reviewable changes while keeping the manually deployed Version 1 site working.
+
+## Recovered backend source
+
+The owner-supplied Lambda ZIP was recovered byte-for-byte into
+[backend/lambda/lambda_function.py](backend/lambda/lambda_function.py), preserving
+GET, explicit POST, DynamoDB calls and existing error behavior. Python 3.14 is
+owner-confirmed. See the [backend guide](backend/README.md) for the exact API
+contract and provenance limits: matching the supplied ZIP does not independently
+prove equality with the function/version currently serving production.
+
+Run offline tests from the repository root:
+
+```sh
+python3 -m unittest discover -s backend/tests -v
+```
+
+All 13 backend tests and 58 frontend tests passed during recovery. No live API
+request, AWS update or deployment was performed for this recovery milestone.
