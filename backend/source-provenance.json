@@ -15,5 +15,13 @@
     "value": "lambda_function.lambda_handler",
     "evidence": "Derived from recovered module and function; deployed setting not independently inspected"
   },
-  "provenance_limit": "Source matches the owner-supplied deployment package byte-for-byte. No live AWS configuration or current deployed CodeSha256 was inspected."
+  "provenance_limit": "The Python file matches the owner-supplied deployment ZIP byte-for-byte. The owner subsequently reported that the API Gateway integration invokes unqualified Lambda ($LATEST) and that its deployed CodeSha256 exactly matched the ZIP's expected base64 SHA256. AWS data was not independently retrieved in this repository review.",
+  "live_aws_verification": {
+    "checked_on": "2026-10-30",
+    "evidence": "Repository owner reported AWS Console inspection of HTTP API Lambda integration and AWS CLI get-function-configuration output.",
+    "api_gateway_integration_target": "cloud-resume-visitor-function (unqualified / $LATEST)",
+    "expected_code_sha256_base64": "opbyXqFJzG4l5n2QX4+Z7hFh8g0jkWFIIGji9cd28ak=",
+    "comparison_result": "Owner reported exact CodeSha256 match with downloaded deployment ZIP.",
+    "scope": "Hash equality establishes same ZIP deployment package at verification time, given the reported unqualified integration target; not independently inspected by this assistant, and not a guarantee against future Lambda updates."
+  }
 }
