@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Jerome Ibon — Cloud and DevOps engineering portfolio focused on automation, infrastructure, observability, and cloud engineering."
+    />
+    <meta
+      property="og:title"
+      content="__PORTFOLIO_NAME__ | __PORTFOLIO_ROLE__"
+    />
+    <meta
+      property="og:description"
+      content="A production-style Cloud and DevOps portfolio with Terraform-managed Azure infrastructure, GitHub Actions delivery, observability, and Kubernetes GitOps work."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="__PORTFOLIO_URL__" />
+    <meta property="og:site_name" content="__PORTFOLIO_NAME__" />
+    <meta
+      property="og:image"
+      content="https://jeysibn.github.io/social-preview.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="__PORTFOLIO_NAME__ | __PORTFOLIO_ROLE__"
+    />
+    <meta
+      name="twitter:description"
+      content="A production-style Cloud and DevOps portfolio with Terraform-managed Azure infrastructure, GitHub Actions delivery, observability, and Kubernetes GitOps work."
+    />
+    <meta
+      name="twitter:image"
+      content="https://jeysibn.github.io/social-preview.png"
+    />
+    <meta name="twitter:image:alt" content="Jerome Ibon Cloud and DevOps engineering portfolio" />
+    <link rel="canonical" href="https://jeysibn.github.io/" />
+    <meta name="robots" content="index,follow" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ProfilePage",
+        "url": __PORTFOLIO_JSON_URL__,
+        "mainEntity": {
+          "@type": "Person",
+          "name": __PORTFOLIO_JSON_NAME__,
+          "url": __PORTFOLIO_JSON_URL__,
+          "jobTitle": __PORTFOLIO_JSON_ROLE__,
+          "sameAs": [
+            __PORTFOLIO_JSON_GITHUB__,
+            __PORTFOLIO_JSON_LINKEDIN__
+          ]
+        }
+      }
+    </script>
+    <meta name="theme-color" content="#f2efe9" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <script>
+      (() => {
+        let stored = null;
+        try {
+          stored = localStorage.getItem("color-theme");
+        } catch {
+          // Continue with the system preference when storage is unavailable.
+        }
+        const systemDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+        const theme = stored === "light" || stored === "dark"
+          ? stored
+          : systemDark
+            ? "dark"
+            : "light";
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        document.querySelector('meta[name="theme-color"]').content =
+          theme === "dark" ? "#0a0a0a" : "#f2efe9";
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Big+Shoulders+Display:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <title>__PORTFOLIO_NAME__ | __PORTFOLIO_ROLE__</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
