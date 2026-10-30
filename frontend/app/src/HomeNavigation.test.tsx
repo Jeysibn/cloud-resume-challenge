@@ -11,10 +11,6 @@ import {
   Skills,
 } from "./sections/PortfolioSections";
 
-vi.mock("./api", () => ({
-  fetchHealth: vi.fn().mockResolvedValue({}),
-}));
-
 afterEach(cleanup);
 
 describe("home navigation", () => {

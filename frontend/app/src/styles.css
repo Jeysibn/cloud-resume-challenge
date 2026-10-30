@@ -1026,7 +1026,7 @@ body::after {
   padding: 25px 0 35px;
   border-top: 1px solid var(--color-rule);
   display: grid;
-  grid-template-columns: 1fr 1.4fr auto auto;
+  grid-template-columns: 1fr 1fr minmax(0, 2fr);
   gap: 12px 32px;
   align-items: center;
 }
@@ -1769,3 +1769,18 @@ body:has(.inspection-dialog[open]) {
     break-inside: avoid;
   }
 }
+
+.visitor-counter { min-width: 0; overflow-wrap: anywhere; }
+.visitor-counter button { margin: 8px 8px 0 0; }
+.visitor-counter button:disabled { opacity: 0.6; cursor: default; }
+
+.visitor-button {
+  border: 1px solid var(--color-rule);
+  background: transparent;
+  color: var(--color-text);
+  padding: 12px;
+  min-height: 44px;
+  font: 500 12px/1.4 var(--body);
+  cursor: pointer;
+}
+.visitor-button:hover:not(:disabled) { background: var(--color-surface-hover); }
