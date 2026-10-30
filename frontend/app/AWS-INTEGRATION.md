@@ -50,16 +50,17 @@ AWS CORS reference: https://docs.aws.amazon.com/apigateway/latest/developerguide
 
 ## Remaining information and content review
 
-Needed: invoke URL/stage, actual GET JSON, empty-body POST support, intended frontend
-origins, authorization requirements, and permission to perform real POST testing.
+The invoke URL has been supplied in ignored local configuration. Still unverified:
+actual GET JSON, empty-body POST support, allowed frontend origins, authorization
+requirements, and live integration behavior.
 No real API calls were made. The production build without configuration intentionally
 shows an unavailable state.
 
-Canonical content/portfolio.json is unchanged. Its cloud-portfolio project still
-mentions GitHub Pages, Azure Functions, Cosmos DB, Application Insights, Terraform,
-OIDC and GitHub Actions deployment. Associated architecture SVGs and generated
-resume/portfolio descriptions need a later factual content review; do not treat
-these historical claims as evidence that AWS automation has been deployed.
+Canonical content/portfolio.json now follows portfolio main at the source commit
+below. The cloud-portfolio case study is explicitly labeled as historical Azure
+work; its original infrastructure descriptions and diagrams remain project history.
+AWS Terraform and CI/CD are explicitly not implemented. Other personal facts and
+project histories follow the supplied source of truth.
 
 ## Changed implementation
 
@@ -83,3 +84,24 @@ these historical claims as evidence that AWS automation has been deployed.
   independent styles so the header's mobile icon-only rule cannot hide its text.
 - No AWS integration, deployment, or CloudWatch validation was performed.
 - Final browser run: 40 passed, 14 existing viewport-specific skips, zero failures.
+
+## Corrected frontend source
+
+Source: Jeysibn/portfolio main, commit 80c616efcec37027671f30849ec28245058dd9ab.
+Imported by file comparison, without merging repository histories. Synced sections,
+Contact layout, direct resume PDF links, legacy-anchor handling, dialog history fix,
+canonical MoniKey content, application/database/GitOps SVGs, related tests and source
+hero baseline. Public resume and other unchanged assets match the source already.
+The obsolete MoniKey system/delivery SVGs were removed to match source main.
+
+The AWS api.ts, VisitorCounter.tsx, their unit tests and .env.example remain byte-for-byte
+identical to c81e541. Source Azure assistant, health UI, API configuration and publish
+script were excluded. The ignored local .env.local is preserved. No live POST was
+sent during validation; browser tests intercept /visits with a fixture.
+
+Correction validation: typecheck, lint, 55 unit tests, production build and performance
+budget passed (79.3 KiB gzip JavaScript against 180 KiB). Public assets were compared
+byte-for-byte against source main. Mobile light and desktop dark Contact/footer
+were visually inspected. The source hero baseline changed only to remove the
+unavailable assistant; the screenshot comparison was rerun afterward.
+Final browser suite: 46 passed, 14 existing viewport-specific skips, zero failures.

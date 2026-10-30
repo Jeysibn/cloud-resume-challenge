@@ -12,12 +12,12 @@ const SECTION_IDS = new Set([
   "experience",
   "skills",
   "credentials",
-  "resume",
   "contact",
 ]);
 
 const LEGACY_SECTION_IDS: Record<string, string> = {
   about: "top",
+  resume: "contact",
   "credentials-title": "credentials",
 };
 

@@ -227,6 +227,23 @@ test.describe("quiet motion", () => {
     await expect(card).toHaveCSS("transform", "none");
   });
 
+  test("has no resume section and offers the PDF from the header, hero and contact", async ({ page }, testInfo) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#resume")).toHaveCount(0);
+
+    const downloads = page.locator('a[href="./resume.pdf"]');
+    await expect(downloads.first()).toHaveAttribute("download", "Jerome-Ibon-Resume.pdf");
+    const visible = testInfo.project.name.startsWith("desktop") ? 3 : 2;
+    expect(await downloads.count()).toBeGreaterThanOrEqual(visible);
+    await expect(page.locator("#contact").locator('a[href="./resume.pdf"]')).toHaveCount(1);
+    await expect(page.locator(".hero").locator('a[href="./resume.pdf"]')).toHaveCount(1);
+  });
+
+  test("redirects the removed #resume anchor to Contact", async ({ page }) => {
+    await page.goto("/#resume", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/\/#contact$/);
+  });
+
   test("redirects the removed #about anchor to the top of the page", async ({ page }) => {
     await page.goto("/#about", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/#top$/);

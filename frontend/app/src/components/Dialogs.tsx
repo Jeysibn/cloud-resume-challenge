@@ -7,6 +7,10 @@ import { ArchitectureFlow } from "./projects/ArchitectureFlow";
 function useDialog(open: boolean, onClose: () => void) {
   const ref = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
+  // dialog.close() fires its `close` event asynchronously. Without this flag a
+  // programmatic close (for example from browser Back) could report itself as a
+  // user close after a quick Forward and wipe the restored ?project= state.
+  const closedByState = useRef(false);
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
@@ -16,6 +20,7 @@ function useDialog(open: boolean, onClose: () => void) {
       dialog.querySelector<HTMLElement>("[data-dialog-close]")?.focus();
     }
     if (!open && dialog.open) {
+      closedByState.current = true;
       dialog.close();
       opener.current?.focus();
       opener.current = null;
@@ -24,7 +29,13 @@ function useDialog(open: boolean, onClose: () => void) {
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    const close = () => onClose();
+    const close = () => {
+      if (closedByState.current) {
+        closedByState.current = false;
+        return;
+      }
+      onClose();
+    };
     dialog.addEventListener("close", close);
     return () => dialog.removeEventListener("close", close);
   }, [onClose]);

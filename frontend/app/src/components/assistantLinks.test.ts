@@ -34,6 +34,15 @@ describe("assistant link resolution", () => {
     ).toEqual({ type: "section", label: "Approach", target: "top" });
   });
 
+  it("sends links to the removed #resume section to Contact", () => {
+    expect(
+      resolveAssistantLink(
+        { id: "resume", label: "Resume", url: "https://jeysibn.github.io/#resume" },
+        "https://jeysibn.github.io/",
+      ),
+    ).toEqual({ type: "section", label: "Resume", target: "contact" });
+  });
+
   it("maps approved project source IDs to canonical portfolio projects", () => {
     expect(
       resolveAssistantLink(
