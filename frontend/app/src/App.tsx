@@ -15,7 +15,6 @@ import {
   PrintResume,
 } from "./sections/PortfolioSections";
 import { ProjectDialog, SkillDialog } from "./components/Dialogs";
-import { PortfolioAssistant } from "./components/PortfolioAssistant";
 import type { SkillSelection } from "./components/capabilities/SkillGroups";
 import { projectFromSearch } from "./projectNavigation";
 
@@ -72,7 +71,6 @@ export default function App() {
         <Contact />
       </main>
       <SiteFooter />
-      <PortfolioAssistant />
       <ProjectDialog project={project} onClose={closeProject} />
       <SkillDialog selection={skill} onClose={() => setSkill(null)} />
       <PrintResume />

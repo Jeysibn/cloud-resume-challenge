@@ -2,24 +2,8 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 async function stubPublicApi(page: import("@playwright/test").Page) {
-  await page.route("**/api/health", (route) =>
-    route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ status: "healthy", service: "portfolio-api", version: "test" }),
-    }),
-  );
-  await page.route("**/api/GetVisitorCount", (route) =>
+  await page.route("**/visits", (route) =>
     route.fulfill({ contentType: "application/json", body: JSON.stringify({ count: 42 }) }),
-  );
-  await page.route("**/api/AiChatAssistant", (route) =>
-    route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        reply: "The Cloud-Backed Portfolio uses Azure Functions and Terraform.",
-        sources: [],
-        usage: { limit: 10, remaining: 9 },
-      }),
-    }),
   );
 }
 
@@ -294,18 +278,14 @@ test.describe("mobile portfolio interactions", () => {
     await expectNoHorizontalOverflow(page);
   });
 
-  test("keeps assistant keyboard and accessibility states usable", async ({ page }) => {
-    const trigger = page.getByRole("button", { name: /Ask this portfolio/ });
-    await trigger.click();
-    await expect(page.getByLabel("Your question")).toBeFocused();
-    const assistantAxe = await new AxeBuilder({ page }).include(".portfolio-assistant").analyze();
-    expect(assistantAxe.violations).toEqual([]);
-
-    await page.getByLabel("Your question").fill("How does Jerome use Terraform?");
-    await page.getByRole("button", { name: "Send" }).click();
-    await expect(page.getByText("Azure Functions and Terraform.")).toBeVisible();
-    await page.getByRole("button", { name: "Close assistant" }).click();
-    await expect(trigger).toBeFocused();
+  test("removes the assistant and keeps the counter accessible", async ({ page }) => {
+    await expect(page.getByRole("button", { name: /Ask this portfolio/ })).toHaveCount(0);
+    const counter = page.locator(".visitor-counter");
+    await expect(counter).toContainText("Recorded visits");
+    const record = counter.getByRole("button", { name: "Record My Visit" });
+    await expect(record).toBeVisible();
+    expect(await record.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThan(0);
+    expect((await new AxeBuilder({ page }).include(".visitor-counter").analyze()).violations).toEqual([]);
   });
 
   test("keeps skills content readable with reduced motion", async ({ page }) => {

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchHealth } from "../api";
 import type { ThemePreference } from "../portfolio";
-import { VisitorCounter } from "./PortfolioAssistant";
+import { VisitorCounter } from "./VisitorCounter";
 
 /**
  * Header destinations group the page anchors; every section keeps its own
@@ -114,32 +113,11 @@ export function SiteHeader({
     </header>
   );
 }
-function SystemStatus() {
-  const [status, setStatus] = useState("checking");
-  useEffect(() => {
-    const c = new AbortController();
-    fetchHealth(c.signal)
-      .then(() => setStatus("online"))
-      .catch((e: unknown) => {
-        if (!(e instanceof DOMException && e.name === "AbortError"))
-          setStatus("unavailable");
-      });
-    return () => c.abort();
-  }, []);
-  return (
-    <div className="system-status" aria-live="polite">
-      <span className={`status-light ${status}`} aria-hidden="true" />
-      API {status}
-    </div>
-  );
-}
-
 export function SiteFooter() {
   return (
     <footer className="site-footer">
       <p className="footer-brand">JEYSIBN · Jerome Christian Ibon</p>
-      <p>React + TypeScript · Terraform-managed Azure backend</p>
-      <SystemStatus />
+      <p>React + TypeScript</p>
       <VisitorCounter />
     </footer>
   );

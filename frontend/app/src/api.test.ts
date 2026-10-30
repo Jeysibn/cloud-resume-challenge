@@ -1,74 +1,25 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  CHAT_REQUEST_TIMEOUT_MS,
-  ChatRequestAbortedError,
-  ChatRequestTimeoutError,
-  sendChatMessage,
-} from "./api";
-
-describe("assistant API request lifecycle", () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-  });
-
-  it("passes the caller signal and normalizes a successful response", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      headers: { get: () => "application/json" },
-      json: async () => ({ reply: " Grounded answer ", sources: [] }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(sendChatMessage("Question", [], "session")).resolves.toMatchObject({
-      reply: "Grounded answer",
-    });
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("/AiChatAssistant"),
-      expect.objectContaining({ method: "POST", signal: expect.any(AbortSignal) }),
-    );
-  });
-
-  it("turns an application timeout into a controlled timeout error", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((_url: string, init?: RequestInit) =>
-        new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
-        }),
-      ),
-    );
-    const request = sendChatMessage("Question", [], "session");
-    const expectation = expect(request).rejects.toBeInstanceOf(ChatRequestTimeoutError);
-    await vi.advanceTimersByTimeAsync(CHAT_REQUEST_TIMEOUT_MS);
-    await expectation;
-  });
-
-  it("preserves a caller cancellation as an abort error", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((_url: string, init?: RequestInit) =>
-        new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
-        }),
-      ),
-    );
-    const controller = new AbortController();
-    const request = sendChatMessage("Question", [], "session", controller.signal);
-    controller.abort();
-    await expect(request).rejects.toBeInstanceOf(ChatRequestAbortedError);
-  });
-
-  it("rejects malformed successful payloads instead of creating an empty answer", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      headers: { get: () => "application/json" },
-      json: async () => ({ sources: [] }),
-    }));
-
-    await expect(sendChatMessage("Question", [], "session")).rejects.toThrow(
-      "The AI assistant returned an empty response",
-    );
-  });
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { fetchVisitorCount, recordVisit } from "./api";
+beforeEach(() => vi.stubEnv("VITE_API_BASE_URL", "https://example.test///"));
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+it.each([0, 42])("reads valid count %s", async count => {
+ const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ count }))); vi.stubGlobal("fetch", fetch);
+ await expect(fetchVisitorCount()).resolves.toBe(count);
+ expect(fetch).toHaveBeenCalledExactlyOnceWith("https://example.test/visits", {method:"GET", signal:undefined});
+});
+it.each([null, {}, {count:-1}, {count:1.5}, {count:"2"}])("rejects invalid %j", async payload => {
+ vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(payload))));
+ await expect(fetchVisitorCount()).rejects.toThrow("invalid count");
+});
+it("does not fetch without configuration", async () => {
+ vi.stubEnv("VITE_API_BASE_URL", ""); const fetch=vi.fn(); vi.stubGlobal("fetch", fetch);
+ await expect(fetchVisitorCount()).rejects.toThrow("VITE_API_BASE_URL"); expect(fetch).not.toHaveBeenCalled();
+});
+it("handles network and HTTP failure", async () => {
+ vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(new TypeError()).mockResolvedValueOnce(new Response(null,{status:503})));
+ await expect(fetchVisitorCount()).rejects.toThrow("could not be reached"); await expect(fetchVisitorCount()).rejects.toThrow("HTTP 503");
+});
+it("POST does not require a response shape", async () => {
+ const fetch=vi.fn().mockResolvedValue(new Response(null,{status:204})); vi.stubGlobal("fetch",fetch); await recordVisit();
+ expect(fetch).toHaveBeenCalledExactlyOnceWith("https://example.test/visits",{method:"POST",signal:undefined});
 });
