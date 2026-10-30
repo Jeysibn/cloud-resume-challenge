@@ -117,11 +117,7 @@ Recovery does not require deployment, and no deployment was performed.
 
 ## What is established
 
-The local source **matches the supplied ZIP byte-for-byte**. That does not prove it
-matches the function serving production now: the ZIP has no signed export record,
-function configuration, export timestamp or deployed CodeSha256. Runtime 3.14 is
-owner-confirmed; source-to-live equivalence requires a fresh trusted download or
-AWS code/configuration evidence for the exact function/version used by API Gateway.
+The local source **matches the supplied ZIP byte-for-byte**. On 2026-10-30, the owner additionally reported checking API Gateway's unqualified Lambda integration target (`$LATEST`) and comparing AWS `CodeSha256` to the expected SHA256 of that ZIP; the fingerprints **matched exactly**. The expected Base64 hash is `opbyXqFJzG4l5n2QX4+Z7hFh8g0jkWFIIGji9cd28ak=`. This is strong package-equivalence evidence for the serving version at the time of verification, not independent AWS inspection or protection against later updates. Runtime 3.14 is owner-confirmed. See `source-provenance.json`.
 No AWS SDK calls, live GET/POST requests or infrastructure changes were performed.
 
 Recovery validation also passed all 58 existing frontend tests and frontend
