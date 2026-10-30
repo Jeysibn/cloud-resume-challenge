@@ -25,6 +25,7 @@
 | Production smoke checks | 6/6: homepage/design, navigation/theme/dialogs, MoniKey diagrams, PDF download, `/?project=monikey`, browser Console | User-reported result |
 | Network smoke checks | HTML, JS, CSS, resume and API GET HTTP 200 | User-reported result |
 | Origin protection | Private S3, OAC, default root object and rollback backup confirmed | Actual policy documents not stored in repo |
+| Live backend source provenance | Owner confirmed API Gateway invokes unqualified Lambda / `$LATEST` and AWS `CodeSha256` exactly equals the recovered deployment ZIP SHA256 (Base64) on 2026-10-30 | AWS control-plane output not independently fetched; fingerprint only establishes package at time checked |
 
 The user explicitly reported **no deliberate production POST** during deployment smoke testing. Live GET and local POST tests were separate. Do not claim unique-visitor detection, load testing, automatic release delivery, end-to-end authorization verification, or production POST verification.
 
