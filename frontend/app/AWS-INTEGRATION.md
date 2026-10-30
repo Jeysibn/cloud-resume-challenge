@@ -109,3 +109,7 @@ byte-for-byte against source main. Mobile light and desktop dark Contact/footer
 were visually inspected. The source hero baseline changed only to remove the
 unavailable assistant; the screenshot comparison was rerun afterward.
 Final browser suite: 46 passed, 14 existing viewport-specific skips, zero failures.
+
+## Release verification update — 2026-10-30
+
+The owner reported successful live `GET /visits` (local and CloudFront-origin browser), one deliberate successful local `POST /visits` incrementing DynamoDB from 7 to 8, and a production read-only smoke test. They also reported API Gateway's unqualified `$LATEST` Lambda target and an exact deployed `CodeSha256` match with the recovered ZIP. This establishes the backend source package at the time of inspection based on owner-supplied AWS evidence; no new production POST was performed and AWS settings were not independently accessed in this repository review. This section supersedes earlier milestone statements that live integration and package matching were not yet tested.
