@@ -99,8 +99,10 @@ The owner-supplied Lambda ZIP was recovered byte-for-byte into
 [backend/lambda/lambda_function.py](backend/lambda/lambda_function.py), preserving
 GET, explicit POST, DynamoDB calls and existing error behavior. Python 3.14 is
 owner-confirmed. See the [backend guide](backend/README.md) for the exact API
-contract and provenance limits: matching the supplied ZIP does not independently
-prove equality with the function/version currently serving production.
+contract and provenance limits: the owner subsequently confirmed that API Gateway invokes `$LATEST` and its AWS
+`CodeSha256` exactly matched the supplied ZIP fingerprint on 2026-10-30. This is
+owner-reported proof of package equality at the time of verification; AWS config
+was not independently accessed.
 
 Run offline tests from the repository root:
 
