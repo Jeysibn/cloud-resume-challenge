@@ -10,6 +10,7 @@
     "lint": "eslint . --max-warnings 0",
     "test": "vitest",
     "test:ui": "playwright test",
+    "test:metadata": "node scripts/check-metadata.mjs",
     "perf:budget": "node scripts/check-performance.mjs",
     "validate:ci": "npm run typecheck && npm run lint && npm test -- --run && npm run build && npm run perf:budget && PLAYWRIGHT_SKIP_BUILD=1 npm run test:ui",
     "preview": "vite preview"

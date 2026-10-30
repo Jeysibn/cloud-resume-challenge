@@ -16,6 +16,7 @@ function canonicalMetadataPlugin() {
   const name = escapeHtml(canonicalContent.profile.name);
   const role = escapeHtml(canonicalContent.profile.role);
   const portfolio = escapeHtml(canonicalContent.profile.portfolio);
+  const image = escapeHtml(new URL("social-preview.png", canonicalContent.profile.portfolio).href);
   const github = escapeHtml(canonicalContent.profile.github);
   const linkedin = escapeHtml(canonicalContent.profile.linkedin);
   const jsonName = JSON.stringify(canonicalContent.profile.name);
@@ -36,6 +37,7 @@ function canonicalMetadataPlugin() {
         .replaceAll("__PORTFOLIO_NAME__", name)
         .replaceAll("__PORTFOLIO_ROLE__", role)
         .replaceAll("__PORTFOLIO_URL__", portfolio)
+        .replaceAll("__PORTFOLIO_IMAGE_URL__", image)
         .replaceAll("__PORTFOLIO_GITHUB__", github)
         .replaceAll("__PORTFOLIO_LINKEDIN__", linkedin);
     },
@@ -51,7 +53,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     // No source-map upload or private monitoring consumer exists in this
-    // repository; avoid publishing source maps with the Pages artifact.
+    // repository; avoid publishing source maps with the frontend artifact.
     sourcemap: false,
   },
 });
