@@ -12,7 +12,7 @@
     "test:ui": "playwright test",
     "test:metadata": "node scripts/check-metadata.mjs",
     "perf:budget": "node scripts/check-performance.mjs",
-    "validate:ci": "npm run typecheck && npm run lint && npm test -- --run && npm run build && npm run perf:budget && PLAYWRIGHT_SKIP_BUILD=1 npm run test:ui",
+    "validate:ci": "npm run typecheck && npm run lint && npm test -- --run && npm run build && npm run test:metadata && npm run perf:budget && PLAYWRIGHT_SKIP_BUILD=1 npm run test:ui",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -40,7 +40,7 @@
     "tailwindcss": "4.3.3",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.70.0",
-    "vite": "8.2.2",
+    "vite": "8.2.4",
     "vitest": "^5.0.0"
   }
 }
