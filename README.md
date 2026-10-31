@@ -6,10 +6,23 @@ Version 1 was a manually built deployment in an older AWS project. That project 
 
 ## How the site works
 
-```text
-Your browser ── HTTPS ── CloudFront ── private S3 bucket (website files)
-      │
-      └── HTTPS ── API Gateway ── Python Lambda ── DynamoDB (visit count)
+```mermaid
+flowchart LR
+    Browser[Visitor browser]
+    CloudFront[CloudFront]
+    Website[Private S3 website bucket]
+    API[API Gateway HTTP API]
+    Lambda[Python Lambda]
+    Counter[(DynamoDB counter)]
+    Actions[GitHub Actions on main]
+
+    Browser -->|Loads website| CloudFront
+    CloudFront -->|Reads files through OAC| Website
+    Browser -->|GET or POST /visits| API
+    API --> Lambda
+    Lambda --> Counter
+    Actions -->|Uploads website files using OIDC| Website
+    Actions -->|Requests cache refresh| CloudFront
 ```
 
 CloudFront delivers the website files. It reads them from a private S3 bucket through Origin Access Control (OAC). The browser calls API Gateway directly for the counter: `GET /visits` reads the count, and clicking **Record My Visit** sends `POST /visits` to increase it. The count is recorded actions, not unique people.
