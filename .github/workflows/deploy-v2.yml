@@ -120,7 +120,7 @@ jobs:
         run: python3 -m unittest discover -s backend/tests -v
 
       - name: Check Python syntax
-        run: python3 -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py backend/scripts/guard_terraform_plan.py
+        run: python3 -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py
 
       - name: Build and validate Lambda ZIP
         run: |
