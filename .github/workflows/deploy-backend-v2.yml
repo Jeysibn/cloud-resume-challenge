@@ -1,0 +1,301 @@
+name: V2 Backend CI/CD
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v2-backend-deploy
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate backend source and package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main branch
+        env:
+          SELECTED_REF: ${{ github.ref }}
+        run: |
+          if [ "$SELECTED_REF" != "refs/heads/main" ]; then
+            echo "Deployment stopped: select main in the Run workflow form (selected: $SELECTED_REF)." >&2
+            exit 1
+          fi
+
+      - name: Check out selected commit
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.14"
+
+      - name: Run backend unit tests
+        run: python3 -m unittest discover -s backend/tests -v
+
+      - name: Check Python syntax
+        run: python3 -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py backend/scripts/guard_terraform_plan.py
+
+      - name: Build and validate Lambda ZIP
+        run: |
+          python3 backend/lambda-v2/package.py
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          package = Path("backend/lambda-v2/function.zip")
+          with ZipFile(package) as archive:
+              assert archive.testzip() is None, "ZIP integrity check failed"
+              assert archive.namelist() == ["lambda_function.py"], archive.namelist()
+              assert b"def lambda_handler(" in archive.read("lambda_function.py")
+          print("Lambda ZIP integrity and handler checks passed.")
+          PY
+
+      - name: Save validated Lambda package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: v2-lambda-package-${{ github.sha }}
+          path: backend/lambda-v2/function.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  plan:
+    name: Review guarded Terraform plan
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      result: ${{ steps.guard.outputs.result }}
+      fingerprint: ${{ steps.guard.outputs.fingerprint }}
+    steps:
+      - name: Check out selected commit
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: "1.10.5"
+
+      - name: Download validated Lambda package
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: v2-lambda-package-${{ github.sha }}
+          path: backend/lambda-v2
+
+      - name: Configure AWS credentials for Terraform planning
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::665514296439:role/cloud-resume-v2-backend-plan
+          aws-region: ap-southeast-2
+          allowed-account-ids: "665514296439"
+
+      - name: Verify AWS account and region
+        run: |
+          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+          if [ "$ACCOUNT" != "665514296439" ] || [ "$AWS_REGION" != "ap-southeast-2" ]; then
+            echo "Planning stopped: expected AWS account 665514296439 in ap-southeast-2." >&2
+            exit 1
+          fi
+
+      - name: Initialize Terraform
+        working-directory: infra/terraform
+        run: terraform init -input=false
+
+      - name: Create and guard full Terraform plan
+        id: guard
+        working-directory: infra/terraform
+        run: |
+          trap 'rm -f "$RUNNER_TEMP/backend-plan.json" "$RUNNER_TEMP/terraform-plan.log" backend.tfplan' EXIT
+          if ! terraform plan -input=false -lock-timeout=5m -out=backend.tfplan > "$RUNNER_TEMP/terraform-plan.log" 2>&1; then
+            echo "Planning stopped: Terraform could not create a plan. Details are suppressed because plans may contain state values; inspect access, provider, and state errors in a secure operator session." >&2
+            exit 1
+          fi
+          if ! terraform show -json backend.tfplan > "$RUNNER_TEMP/backend-plan.json" 2>/dev/null; then
+            echo "Planning stopped: Terraform could not safely read the plan as JSON." >&2
+            exit 1
+          fi
+          GUARD_RESULT="$(python3 ../../backend/scripts/guard_terraform_plan.py "$RUNNER_TEMP/backend-plan.json" ../../backend/lambda-v2/function.zip)" || exit 1
+          if [ "$GUARD_RESULT" = "NOOP" ]; then
+            echo "result=noop" >> "$GITHUB_OUTPUT"
+            echo "fingerprint=" >> "$GITHUB_OUTPUT"
+            {
+              echo "## No backend deployment required"
+              echo
+              echo "The selected commit's validated Lambda ZIP already matches Terraform's planned Lambda code. No production deployment was requested and the deployment approval job will be skipped."
+            } >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$GUARD_RESULT" =~ ^UPDATE\ ([0-9a-f]{64})$ ]]; then
+            FINGERPRINT="${BASH_REMATCH[1]}"
+            echo "result=update" >> "$GITHUB_OUTPUT"
+            echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Backend deployment plan passed safety checks"
+              echo
+              echo "Commit: ${GITHUB_SHA}"
+              echo "Terraform proposes one in-place code update to aws_lambda_function.visitor. No other resource changes, replacements, deletions, drift, or output changes were accepted."
+              echo "Safe plan fingerprint: \`$FINGERPRINT\`"
+              echo
+              echo "The production job will create a fresh plan after environment approval and compare its fingerprint before applying."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Planning stopped: the safety guard returned an unexpected result." >&2
+            exit 1
+          fi
+
+  report-noop:
+    name: No backend deployment required
+    needs: plan
+    if: needs.plan.outputs.result == 'noop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Confirm no-op result
+        run: echo "No backend deployment required; the validated ZIP already matches the planned Lambda code."
+
+  deploy:
+    name: Apply approved backend update
+    needs: [validate, plan]
+    if: github.ref == 'refs/heads/main' && needs.plan.outputs.result == 'update'
+    runs-on: ubuntu-latest
+    # This job waits only if production has required reviewers configured in
+    # GitHub Settings. Without those external rules, the environment is not a gate.
+    environment:
+      name: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out selected commit
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: "1.10.5"
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.14"
+
+      - name: Re-run backend unit tests after approval
+        run: python3 -m unittest discover -s backend/tests -v
+
+      - name: Re-check syntax and rebuild deterministic Lambda ZIP
+        run: |
+          python3 -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py backend/scripts/guard_terraform_plan.py
+          python3 backend/lambda-v2/package.py
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          with ZipFile(Path("backend/lambda-v2/function.zip")) as archive:
+              assert archive.testzip() is None, "ZIP integrity check failed"
+              assert archive.namelist() == ["lambda_function.py"], archive.namelist()
+              assert b"def lambda_handler(" in archive.read("lambda_function.py")
+          print("Lambda ZIP integrity and handler checks passed.")
+          PY
+
+      # GitHub evaluates the production Environment rules before starting this
+      # job, so this credential step is not reached before an enforced approval.
+      - name: Configure AWS credentials through OIDC after environment gate
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::665514296439:role/cloud-resume-v2-backend-deploy
+          aws-region: ap-southeast-2
+          allowed-account-ids: "665514296439"
+
+      - name: Verify AWS account and region
+        run: |
+          ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+          if [ "$ACCOUNT" != "665514296439" ] || [ "$AWS_REGION" != "ap-southeast-2" ]; then
+            echo "Deployment stopped: expected AWS account 665514296439 in ap-southeast-2." >&2
+            exit 1
+          fi
+
+      - name: Initialize Terraform
+        working-directory: infra/terraform
+        run: terraform init -input=false
+
+      - name: Re-plan, compare safe fingerprint, and apply
+        working-directory: infra/terraform
+        env:
+          APPROVED_FINGERPRINT: ${{ needs.plan.outputs.fingerprint }}
+        run: |
+          trap 'rm -f "$RUNNER_TEMP/backend-plan.json" "$RUNNER_TEMP/terraform-plan.log" "$RUNNER_TEMP/terraform-apply.log" backend.tfplan' EXIT
+          if ! terraform plan -input=false -lock-timeout=5m -out=backend.tfplan > "$RUNNER_TEMP/terraform-plan.log" 2>&1; then
+            echo "Deployment stopped: Terraform could not recreate the plan after approval. No change was applied." >&2
+            exit 1
+          fi
+          if ! terraform show -json backend.tfplan > "$RUNNER_TEMP/backend-plan.json" 2>/dev/null; then
+            echo "Deployment stopped: the post-approval Terraform plan could not be safely read." >&2
+            exit 1
+          fi
+          GUARD_RESULT="$(python3 ../../backend/scripts/guard_terraform_plan.py "$RUNNER_TEMP/backend-plan.json" ../../backend/lambda-v2/function.zip)" || exit 1
+          case "$GUARD_RESULT" in
+            UPDATE\ *)
+              CURRENT_FINGERPRINT="${GUARD_RESULT#UPDATE }"
+              if [ "$CURRENT_FINGERPRINT" != "$APPROVED_FINGERPRINT" ]; then
+                echo "Deployment stopped: the post-approval plan differs from the reviewed plan. Review a new plan and approve a new run; no change was applied." >&2
+                exit 1
+              fi
+              ;;
+            NOOP)
+              echo "Deployment stopped: the reviewed Lambda update is now a no-op. Start a new run to record a no-deployment result; no change was applied." >&2
+              exit 1
+              ;;
+            *)
+              echo "Deployment stopped: the post-approval safety guard returned an unexpected result; no change was applied." >&2
+              exit 1
+              ;;
+          esac
+          if ! terraform apply -input=false -lock-timeout=5m backend.tfplan > "$RUNNER_TEMP/terraform-apply.log" 2>&1; then
+            echo "Terraform apply failed. Output is suppressed because it may contain state values; check the AWS and Terraform error in a secure operator session." >&2
+            exit 1
+          fi
+
+      - name: Verify Lambda update
+        run: |
+          if ! aws lambda wait function-updated-v2 --function-name cloud-resume-v2-visitor-function; then
+            echo "Deployment failed: Lambda did not reach the updated state." >&2
+            exit 1
+          fi
+          ACTUAL_CODE_SHA="$(aws lambda get-function-configuration --function-name cloud-resume-v2-visitor-function --query CodeSha256 --output text)"
+          EXPECTED_CODE_SHA="$(python3 - <<'PY'
+          import base64
+          import hashlib
+          from pathlib import Path
+          print(base64.b64encode(hashlib.sha256(Path("backend/lambda-v2/function.zip").read_bytes()).digest()).decode())
+          PY
+          )"
+          if [ "$ACTUAL_CODE_SHA" != "$EXPECTED_CODE_SHA" ]; then
+            echo "Deployment failed verification: AWS Lambda's code hash does not match the validated ZIP." >&2
+            exit 1
+          fi
+          echo "Backend deployment succeeded: Lambda code hash matches the validated ZIP."
+          {
+            echo "## Backend deployment succeeded"
+            echo
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Lambda: cloud-resume-v2-visitor-function"
+            echo "AWS reported the same code hash as the validated ZIP."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report deployment failure
+        if: failure()
+        run: |
+          {
+            echo "## Backend deployment failed"
+            echo
+            echo "Read the failed step for the reason. The workflow never attempts infrastructure replacement or automatic rollback."
+          } >> "$GITHUB_STEP_SUMMARY"
