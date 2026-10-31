@@ -1,6 +1,46 @@
-# Version 1 — AWS architecture
+# AWS architecture
 
-**Status:** Manually provisioned and deployed; production smoke tests reported passed on 2026-10-30. This page documents the observed architecture, not an infrastructure-as-code implementation.
+## Current deployment — Version 2
+
+**Status:** Active deployment in AWS account `665514296439`, region `ap-southeast-2`. The owner reports the portfolio working at [https://d1ezqc8d2heo4m.cloudfront.net/](https://d1ezqc8d2heo4m.cloudfront.net/). The initial GitHub Actions OIDC deployment completed in run [41213992608](https://github.com/Jeysibn/cloud-resume-challenge/actions/runs/41213992608).
+
+```mermaid
+flowchart LR
+    U[Visitor browser]
+    CF[CloudFront]
+    S3[Private S3 website bucket]
+    APIGW[API Gateway HTTP API]
+    L[Python 3.14 Lambda]
+    DDB[(DynamoDB visitor counter)]
+    GH[GitHub Actions on main]
+
+    U -->|HTTPS portfolio| CF
+    CF -->|OAC| S3
+    U -->|GET /visits and explicit POST /visits| APIGW
+    APIGW --> L
+    L --> DDB
+    GH -->|OIDC role: upload and invalidate| S3
+    GH --> CF
+```
+
+Terraform manages the V2 website bucket and its public-access, ownership, encryption, and CloudFront policy settings; CloudFront distribution and OAC; API Gateway routes and stage; Lambda and execution role; DynamoDB table; CloudWatch log groups; and the GitHub Actions deployment role. The existing GitHub OIDC identity provider is read as a data source, not recreated. Terraform state is stored separately at `s3://cloud-resume-tfstate-665514296439-ap-southeast-2/cloud-resume-challenge/v2/terraform.tfstate`.
+
+| Component | V2 value |
+| --- | --- |
+| Website | `https://d1ezqc8d2heo4m.cloudfront.net/` |
+| Website bucket | `cloud-resume-v2-website-665514296439-ap-southeast-2` |
+| CloudFront distribution | `E2558FK1UWYLQG` |
+| API base URL | `https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com` |
+| API routes | `GET /visits`, `POST /visits` |
+| Lambda | `cloud-resume-v2-visitor-function` |
+| DynamoDB table | `cloud-resume-v2-visitor-counter` |
+| GitHub deployment role | `cloud-resume-v2-github-actions-deploy` |
+
+The browser calls API Gateway directly; API requests are not proxied through CloudFront. GET reads without changing the count, and the user's explicit button action sends POST to increment it. The DynamoDB item is initialized separately from Terraform. The counter records actions, not unique visitors.
+
+## Historical deployment — Version 1
+
+**Status:** Retired. V1 was manually provisioned in an older AWS project that has since been closed. The resource values and observations below are historical and do not describe the active deployment.
 
 ## System overview
 
@@ -28,7 +68,7 @@ CloudFront serves the React/TypeScript/Vite bundle stored in the private S3 buck
 | --- | --- | --- |
 | AWS region | `ap-southeast-2` (Sydney) | User-selected deployment region |
 | Frontend | `https://d31yy7ezo2w9ph.cloudfront.net/` | User reports working production React site |
-| S3 bucket | `cloud-resume-lab-jeysibn` | User reports private bucket; Block Public Access and OAC confirmed in Console |
+| S3 bucket | `cloud-resume-lab-jeysibn-563586109293-ap-southeast-2-an` | User reports private bucket; Block Public Access and OAC confirmed in Console |
 | CloudFront | Existing distribution, with S3 origin, OAC, default root object `index.html` | User's 5.5.3 Console verification |
 | API Gateway | HTTP API `cloud-resume-visitor-api` | Routes and working GET/POST reported by user |
 | API endpoint | `https://10lm4byr49.execute-api.ap-southeast-2.amazonaws.com` | Tested from local React; CloudFront-origin GET passed |

@@ -14,3 +14,14 @@ __pycache__/
 .pytest_cache/
 *.zip
 .aws/
+
+# Terraform local files and sensitive state
+**/.terraform/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+crash.log
+crash.*.log

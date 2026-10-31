@@ -1,4 +1,21 @@
-# Recovered AWS visitor counter
+# Backend source and validation
+
+## Active Version 2 handler
+
+The active Terraform deployment uses [`lambda-v2/lambda_function.py`](lambda-v2/lambda_function.py), configured as `lambda_function.lambda_handler` with the DynamoDB table supplied through `TABLE_NAME`. Its tests are in [`tests/test_lambda_v2.py`](tests/test_lambda_v2.py) and mock boto3, so they do not use AWS credentials or contact AWS.
+
+Run the V2 tests and rebuild the ZIP from the repository root:
+
+```bash
+python3 -m unittest discover -s backend/tests -v
+python3 backend/lambda-v2/package.py
+```
+
+The packager writes `backend/lambda-v2/function.zip` with the handler at the archive root, validates the ZIP entry, and prints its Base64 SHA-256. The ZIP is generated locally and ignored by Git; rerun the packager after changing the handler and before Terraform planning or deployment. Do not commit the ZIP, Python caches, Terraform state, plans, credentials, or private backups.
+
+## Historical Version 1 recovered handler
+
+The following notes describe the retired V1 Lambda package from the older AWS project. They are retained as source provenance and do not describe the active V2 function.
 
 `lambda/lambda_function.py` is the sole application file from the owner-supplied
 `cloud-resume-visitor-function-e5069e4c-a19e-4f58-a58f-67be174ef055.zip`.
@@ -94,9 +111,9 @@ against this recovered source; POST ignores its body and safely refreshes via GE
 Non-2xx responses map to the existing unavailable/retry behavior. No live request
 is needed for this contract comparison.
 
-## Manual deployment procedure — future reference only
+## Historical V1 manual deployment procedure — retired
 
-Recovery does not require deployment, and no deployment was performed.
+This procedure applies only to the retired V1 function and must not be used for the live V2 deployment. V2 frontend delivery is handled by the GitHub Actions workflow.
 
 1. In the existing Lambda's Console Code tab, download the current deployment
    package again and retain it privately as a rollback copy. Record the current

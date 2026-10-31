@@ -1,10 +1,12 @@
-# Version 1 — Validation record
+# Version 1 — Historical validation record
 
-**Release validation date:** 2026-10-30. This is a record of user-reported hands-on checkpoints and Codex-reported local tests, not a repeat of those tests by this documentation commit.
+> This record covers the retired, manually deployed Version 1 in the older AWS project. It is not the validation record for the active V2 deployment. V2 is live in account `665514296439`; its first OIDC-based GitHub Actions deployment completed in [run 41213992608](https://github.com/Jeysibn/cloud-resume-challenge/actions/runs/41213992608).
+
+**V1 release validation date:** 2026-10-30. This is a record of user-reported hands-on checkpoints and Codex-reported local tests, not a repeat of those tests by this documentation commit.
 
 ## Frontend and dependency checks
 
-- Release source: `feat/aws-react-migration`, security-reviewed commit `c4be030` prior to these documentation changes.
+- Historical release source: `feat/aws-react-migration`, security-reviewed commit `c4be030` prior to those V1 documentation changes.
 - Frontend was synchronized from `Jeysibn/portfolio:main` at `80c616efcec37027671f30849ec28245058dd9ab`, with Azure-specific runtime features replaced by AWS visitor integration.
 - Codex reported: clean `npm ci`, typecheck, lint, 58 unit tests, successful production build, built HTML metadata check, performance budget, and 46 passing Playwright browser checks (14 viewport-specific skips).
 - Audit report: `frontend/app/DEPENDENCY-SECURITY-REVIEW.md`. Codex reported 7 development-tool package entries before patching and zero after; `npm audit --omit=dev` also reported zero before/after. An audit is point-in-time, not a guarantee of no vulnerabilities.
@@ -53,6 +55,6 @@ Browser checks require Playwright prerequisites and a correctly configured local
 - Capture actual Console screenshots or redacted configuration notes for S3 versioning, OAC policy, cache policy, API authorization/throttling, Lambda runtime and execution role, DynamoDB billing mode, CloudWatch retention, and billing alerts.
 - Confirm CloudWatch log inspection and alert routing; the current record does not establish they were checked during the final deployment.
 - Keep the previous build for rollback.
-- Release documentation should be reviewed and merged into `main` only after the user approves. Terraform and automated deployment are **Version 2**, not yet implemented.
+- This record's AWS integration and manual-release steps apply only to V1. Terraform and automated deployment were subsequently implemented for V2; see the current project [README](../README.md) and [architecture](architecture.md).
 
 See [architecture](architecture.md), [manual deployment runbook](deployment-runbook.md), and [security report](../frontend/app/DEPENDENCY-SECURITY-REVIEW.md).
