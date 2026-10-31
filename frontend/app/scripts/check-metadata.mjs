@@ -5,7 +5,7 @@ import { JSDOM } from "jsdom";
 // Check the actual build artifact, including Vite's substitutions and JSON encoding.
 const html = readFileSync(new URL("../dist/index.html", import.meta.url), "utf8");
 const document = new JSDOM(html).window.document;
-const base = "https://d31yy7ezo2w9ph.cloudfront.net/";
+const base = "https://d1ezqc8d2heo4m.cloudfront.net/";
 assert.equal(document.querySelector('link[rel="canonical"]').getAttribute("href"), base);
 assert.equal(document.querySelector('meta[property="og:url"]').content, base);
 for (const selector of ['meta[property="og:image"]', 'meta[name="twitter:image"]']) {
@@ -13,8 +13,9 @@ for (const selector of ['meta[property="og:image"]', 'meta[name="twitter:image"]
 }
 for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
   const description = document.querySelector(selector).content;
-  assert.match(description, /AWS Cloud Resume Challenge Version 1/);
-  assert.doesNotMatch(description, /Terraform|Azure|GitHub Actions/);
+  assert.match(description, /AWS Cloud Resume Challenge Version 2/);
+  assert.match(description, /Terraform and GitHub Actions OIDC/);
+  assert.doesNotMatch(description, /manually configured infrastructure|Azure/);
 }
 const structured = JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent);
 assert.equal(structured.url, base);

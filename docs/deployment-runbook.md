@@ -1,12 +1,14 @@
-# Version 1 — Manual deployment runbook
+# Version 1 — Historical manual deployment runbook
 
-**Scope:** Deploy the built React frontend to the *existing* private S3 bucket and CloudFront distribution. This procedure does not create AWS resources, modify Lambda/DynamoDB, or merge Git branches. It documents the successful 2026-10-30 manual rollout reported by the owner.
+> **Historical reference only:** This runbook describes the retired Version 1 deployment in the older, closed AWS project. Do not use its bucket, API, or CloudFront values for the active portfolio. Version 2 is live in account `665514296439`; deploy its frontend by manually dispatching [`.github/workflows/deploy-v2.yml`](../.github/workflows/deploy-v2.yml) on `main`.
+
+**Historical scope:** These steps document the manually provisioned Version 1 S3 bucket and CloudFront distribution. They do not describe or operate the current V2 deployment.
 
 ## Pre-flight
 
 - Use the checked-out `feat/aws-react-migration` branch of `Jeysibn/cloud-resume-challenge`, based on the audited `c4be030` security commit or a subsequently validated commit.
 - Keep a restorable copy of the currently published files/build **before** replacing them. Initial deployment retained the original static-site backups. For later deployments, also retain the full current React release artifact (HTML and matching hashed assets); restoring only an old `index.html` can break references to missing files.
-- Confirm CloudFront points to `cloud-resume-lab-jeysibn` as the private S3 origin with OAC and Block Public Access still enabled. Confirm its default root object is `index.html`.
+- Confirm CloudFront points to `cloud-resume-lab-jeysibn-563586109293-ap-southeast-2-an` as the private S3 origin with OAC and Block Public Access still enabled. Confirm its default root object is `index.html`.
 - Confirm `GET /visits` works when invoked by a browser opened from the live CloudFront origin. Do not send a POST merely to validate readiness.
 - Confirm the real API Gateway base address is `https://10lm4byr49.execute-api.ap-southeast-2.amazonaws.com`. **Do not append `/visits`** to the build-time variable.
 
@@ -44,7 +46,7 @@ Confirm `dist/index.html`, `dist/assets/`, `dist/resume.pdf` and `dist/social-pr
 
 ## Upload using the AWS Console
 
-1. Open **S3 → Buckets → `cloud-resume-lab-jeysibn` → Objects** and navigate to the **bucket root**.
+1. Open **S3 → Buckets → `cloud-resume-lab-jeysibn-563586109293-ap-southeast-2-an` → Objects** and navigate to the **bucket root**.
 2. Upload the **contents** of `frontend/app/dist/`, not a parent folder named `dist`. Preserve paths including `assets/` and `architecture/`.
 3. Upload new versioned/hash-named JS/CSS assets and all other generated assets **first**. Never delete the prior assets while they may still be referenced by cached HTML.
 4. Upload `index.html` **last**, replacing the root object. Do not remove Block Public Access, change bucket ACLs, or make files public.

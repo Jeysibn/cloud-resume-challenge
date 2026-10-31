@@ -4,7 +4,7 @@ import content from "../../../content/portfolio.json";
 
 describe("AWS production metadata", () => {
   it("uses the intended public URL as canonical content", () => {
-    expect(content.profile.portfolio).toBe("https://d31yy7ezo2w9ph.cloudfront.net/");
+    expect(content.profile.portfolio).toBe("https://d1ezqc8d2heo4m.cloudfront.net/");
   });
 
   it("uses shared URL placeholders rather than old hardcoded hosts", () => {
@@ -15,9 +15,9 @@ describe("AWS production metadata", () => {
       expect(document.querySelector(selector)?.getAttribute("content")).toBe("__PORTFOLIO_IMAGE_URL__");
     }
     expect(template).not.toContain("jeysibn.github.io");
-    expect(template).not.toContain("Terraform-managed");
-    expect(template).not.toContain("GitHub Actions delivery");
-    expect(template).toContain("manually configured infrastructure");
+    expect(template).toContain("Terraform");
+    expect(template).toContain("GitHub Actions OIDC");
+    expect(template).not.toContain("manually configured infrastructure");
   });
 
   it("preserves the Azure project URL as labeled historical work", () => {
