@@ -1,143 +1,29 @@
-# Backend source and validation
+# Backend guide
 
-## Active Version 2 handler
+The live V2 visitor counter uses a Python Lambda function and DynamoDB. The handler source is [`lambda-v2/lambda_function.py`](lambda-v2/lambda_function.py); Terraform creates the Lambda and its execution role.
 
-The active Terraform deployment uses [`lambda-v2/lambda_function.py`](lambda-v2/lambda_function.py), configured as `lambda_function.lambda_handler` with the DynamoDB table supplied through `TABLE_NAME`. Its tests are in [`tests/test_lambda_v2.py`](tests/test_lambda_v2.py) and mock boto3, so they do not use AWS credentials or contact AWS.
+## What the handler does
 
-Run the V2 tests and rebuild the ZIP from the repository root:
+API Gateway sends HTTP API events to `lambda_function.lambda_handler`.
+
+- `GET /visits` reads the item whose key is `id = visitors` and returns its count. It does not change the count.
+- `POST /visits` adds one to the existing count in a single DynamoDB update, so simultaneous clicks do not overwrite each other's increments. It returns the new count.
+- If the item is missing, GET returns 404. POST only updates an existing item; it does not create one.
+- Other methods return 405. AWS SDK or bad-data errors are allowed to reach API Gateway; the handler does not create its own 500 response.
+
+The table name comes from the Lambda environment variable `TABLE_NAME`. Terraform sets it to `cloud-resume-v2-visitor-counter`. The counter item is initialized separately from Terraform.
+
+## Run tests and rebuild the ZIP
+
+From the repository root:
 
 ```bash
 python3 -m unittest discover -s backend/tests -v
 python3 backend/lambda-v2/package.py
 ```
 
-The packager writes `backend/lambda-v2/function.zip` with the handler at the archive root, validates the ZIP entry, and prints its Base64 SHA-256. The ZIP is generated locally and ignored by Git; rerun the packager after changing the handler and before Terraform planning or deployment. Do not commit the ZIP, Python caches, Terraform state, plans, credentials, or private backups.
+The 4 V2 tests mock boto3, so they do not need AWS credentials or contact AWS. The packaging script creates `backend/lambda-v2/function.zip` with `lambda_function.py` at the archive root and verifies the ZIP. The ZIP is generated locally and ignored by Git. Rebuild it after editing the handler and before running Terraform plan or apply.
 
-## Historical Version 1 recovered handler
+## Version 1 source history
 
-The following notes describe the retired V1 Lambda package from the older AWS project. They are retained as source provenance and do not describe the active V2 function.
-
-`lambda/lambda_function.py` is the sole application file from the owner-supplied
-`cloud-resume-visitor-function-e5069e4c-a19e-4f58-a58f-67be174ef055.zip`.
-It was copied byte-for-byte, including whitespace; no production logic was edited.
-Archive and source SHA-256 hashes are recorded in [source-provenance.json](source-provenance.json).
-The ZIP, libraries, credentials and environment files are not committed.
-
-## Runtime and dependencies
-
-- Python **3.14**, confirmed by the repository owner. Local tests used Python 3.14.4.
-- Handler: **`lambda_function.lambda_handler`**, derived from the source. The current
-  AWS handler setting was not independently inspected.
-- Standard-library `json` plus `boto3` for DynamoDB. The archive contains no SDK,
-  dependency manifest or layer information. AWS Python runtimes include boto3;
-  the actual deployed SDK version and any layers remain unverified.
-- No dependency versions were invented or bundled during recovery. No pip install
-  is necessary for the tests below. For real local execution, boto3 and AWS SDK
-  region/credential resolution would be required; that is deliberately outside
-  these mocked tests. Never commit AWS credentials.
-- The source reads no application environment variables. The table name is
-  hardcoded; do not assume a TABLE_NAME setting will override it. Region and
-  credentials are resolved by boto3 through the Lambda runtime/execution role.
-
-AWS documents the [runtime SDK and ZIP packaging](https://docs.aws.amazon.com/lambda/latest/dg/python-package.html)
-and [module.function handler naming](https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html).
-Although AWS recommends packaging dependencies for version control of the SDK,
-this recovery preserves the supplied package's dependency strategy. Changing it
-requires a separate, tested change after confirming the deployed runtime/layers.
-
-## Existing configuration requirements
-
-These are requirements inferred from the source, not resources created here:
-
-- DynamoDB table `cloud-resume-visitor-counter`, with string key `id`.
-- Existing item `{ "id": "visitors", "count": <number> }`. GET returns 404 when
-  absent; POST requires an existing item and numeric count, and does not initialize it.
-- Execution role permits `dynamodb:GetItem` and `dynamodb:UpdateItem` on that table.
-  Existing CloudWatch logging permissions/configuration are external to the ZIP.
-- API Gateway HTTP API events with `requestContext.http.method` (payload v2 shape).
-  The handler does not inspect the path; API Gateway owns routing GET/POST `/visits`.
-- API Gateway CORS for the intended frontend origins. The Python responses contain
-  no CORS or Content-Type headers; actual gateway response behavior is not encoded
-  in this source. OPTIONS sent to this handler returns 405.
-- Actual function name, AWS region, role ARN, timeout, memory, architecture, layers,
-  gateway mappings and authorization must be confirmed from the existing Console
-  configuration. The ZIP does not establish them.
-
-## Exact handler contract
-
-Bodies below are JSON strings inside the Lambda proxy response. No headers or
-`isBase64Encoded` property are added by this handler.
-
-| Method / condition | Status | Decoded body / behavior |
-| --- | --- | --- |
-| GET, item exists | 200 | `{ "count": 42 }` |
-| GET, item missing | 404 | `{ "error": "Visitor counter not found" }` |
-| POST, existing item updated | 200 | `{ "message": "Visitor counter incremented", "count": 43 }` |
-| Other/missing method | 405 | `{ "error": "Method not allowed" }` |
-| DynamoDB failure, including conditional update failure | No handler response | Exception propagates; gateway-visible error is external configuration |
-| Missing/malformed count | No handler response | Conversion/key exception propagates |
-
-GET calls `get_item` with `ConsistentRead=True` and never writes. POST calls
-`update_item` once with `SET #counter = #counter + :inc`, `:inc = 1`,
-`attribute_exists(#pk)` and `ReturnValues="UPDATED_NEW"`. Request body is unused.
-There is no application retry; boto3's runtime retry configuration is not specified
-here. The atomic expression is preserved, but mocks do not prove live DynamoDB
-concurrency behavior. Visits are actions, not unique visitors.
-
-Both success branches convert stored values with `int()`. The backend does not
-validate a nonnegative JavaScript-safe integer: negative values could pass through
-and fractional numeric values would be truncated. The frontend intentionally
-rejects negative or unsafe counts. Correct stored numeric data remains a requirement;
-no data was read or altered during this recovery.
-
-## Local tests
-
-From the repository root:
-
-```sh
-python3 -m unittest discover -s backend/tests -v
-```
-
-The 13 tests inject a mocked boto3 module **before importing** the handler, so its
-module-level DynamoDB initialization cannot resolve credentials or contact AWS.
-They cover consistent read-only GET, zero/missing counters, exact POST expression
-and response, body-free POST, unsupported/missing methods, SDK error propagation,
-and malformed/missing counts. Errors are tested as they exist; no new 500 format
-or recovery behavior was introduced. Python 3.14.4: **13 passed**, including a source-integrity hash check.
-
-Frontend validation: `npm test -- --run` in frontend/app verifies the existing API
-client and explicit-action component. Its GET JSON assumption is now confirmed
-against this recovered source; POST ignores its body and safely refreshes via GET.
-Non-2xx responses map to the existing unavailable/retry behavior. No live request
-is needed for this contract comparison.
-
-## Historical V1 manual deployment procedure — retired
-
-This procedure applies only to the retired V1 function and must not be used for the live V2 deployment. V2 frontend delivery is handled by the GitHub Actions workflow.
-
-1. In the existing Lambda's Console Code tab, download the current deployment
-   package again and retain it privately as a rollback copy. Record the current
-   handler/runtime, layers, role and API Gateway integration target/version/alias.
-2. Compare the fresh package's `lambda_function.py` bytes/hash with the provenance
-   record. If comparing AWS `CodeSha256`, it uses base64-encoded ZIP SHA-256; a
-   newly repackaged ZIP may have different bytes even when the source is identical.
-3. Only when a future code deployment is separately authorized, make a ZIP outside
-   the repository containing `lambda_function.py` at the archive root. Match the
-   existing package/dependency strategy and Python 3.14 settings; exclude tests,
-   caches, documentation, local environments and credentials.
-4. Upload that ZIP through the existing function's Code → Upload from → .zip file
-   flow. Keep `lambda_function.lambda_handler` and existing configuration. If the
-   gateway targets a published version or alias, follow the existing version/alias
-   release process; updating $LATEST alone does not establish what it invokes.
-5. Validate with read-only GET and existing logs. Do not run a POST test against
-   production without explicit authorization, because it changes the counter.
-
-## What is established
-
-The local source **matches the supplied ZIP byte-for-byte**. On 2026-10-30, the owner additionally reported checking API Gateway's unqualified Lambda integration target (`$LATEST`) and comparing AWS `CodeSha256` to the expected SHA256 of that ZIP; the fingerprints **matched exactly**. The expected Base64 hash is `opbyXqFJzG4l5n2QX4+Z7hFh8g0jkWFIIGji9cd28ak=`. This is strong package-equivalence evidence for the serving version at the time of verification, not independent AWS inspection or protection against later updates. Runtime 3.14 is owner-confirmed. See `source-provenance.json`.
-No AWS SDK calls, live GET/POST requests or infrastructure changes were performed.
-
-Recovery validation also passed all 58 existing frontend tests and frontend
-TypeScript checking. No frontend runtime code, build configuration, assets,
-canonical content or environment configuration changed. A new frontend build or
-browser run was not needed for this backend-source/documentation-only change.
+`lambda/lambda_function.py` is the recovered handler from the retired V1 deployment. It remains here as historical source; V2 uses the separate `lambda-v2/` handler. The V1 source and ZIP provenance are recorded in [`source-provenance.json`](source-provenance.json). The old AWS project is closed, and this source is not the deployed V2 Lambda.

@@ -1,60 +1,44 @@
-# Version 1 — Historical validation record
+# Validation and current status
 
-> This record covers the retired, manually deployed Version 1 in the older AWS project. It is not the validation record for the active V2 deployment. V2 is live in account `665514296439`; its first OIDC-based GitHub Actions deployment completed in [run 41213992608](https://github.com/Jeysibn/cloud-resume-challenge/actions/runs/41213992608).
+This page records checks for the live Version 2 project. It separates automated checks from live AWS checks so that mocked tests are not mistaken for production tests.
 
-**V1 release validation date:** 2026-10-30. This is a record of user-reported hands-on checkpoints and Codex-reported local tests, not a repeat of those tests by this documentation commit.
+## Local checks
 
-## Frontend and dependency checks
+The following checks passed against the V2 source during the release preparation:
 
-- Historical release source: `feat/aws-react-migration`, security-reviewed commit `c4be030` prior to those V1 documentation changes.
-- Frontend was synchronized from `Jeysibn/portfolio:main` at `80c616efcec37027671f30849ec28245058dd9ab`, with Azure-specific runtime features replaced by AWS visitor integration.
-- Codex reported: clean `npm ci`, typecheck, lint, 58 unit tests, successful production build, built HTML metadata check, performance budget, and 46 passing Playwright browser checks (14 viewport-specific skips).
-- Audit report: `frontend/app/DEPENDENCY-SECURITY-REVIEW.md`. Codex reported 7 development-tool package entries before patching and zero after; `npm audit --omit=dev` also reported zero before/after. An audit is point-in-time, not a guarantee of no vulnerabilities.
-- `VITE_API_BASE_URL` was configured locally as `https://10lm4byr49.execute-api.ap-southeast-2.amazonaws.com`; it is a public URL, not a credential.
-- The frontend's social, canonical and structured-data metadata were updated for the CloudFront domain. The historical Azure project remains explicitly historical.
+| Check | Result |
+| --- | --- |
+| `terraform fmt -check` and `terraform validate` | Passed |
+| `python3 -m unittest discover -s backend/tests -v` | 17 tests passed; AWS calls are mocked |
+| Frontend typecheck and lint | Passed |
+| `npm test -- --run` | 58 tests passed in 15 files |
+| Production build | Passed with the V2 API URL |
+| Metadata check | Passed; canonical URL is the V2 CloudFront site |
+| Performance budget | Passed: JavaScript bundle is below the configured budget |
+| `git diff --check` | Passed |
 
-## User-reported real AWS integration checks
+The backend tests and frontend unit tests do not modify AWS or the live counter.
 
-| Checkpoint | Reported result | Limitation |
-| --- | --- | --- |
-| API Gateway routes | `GET /visits` and `POST /visits` exist | Route settings/IAM not independently audited |
-| Direct GET | HTTP 200, `{"count":7}` | Snapshot; count can change |
-| Local React with CORS | Successful read of the count | Confirms local browser origin, not all possible origins |
-| Controlled local POST | 2xx; count 7 → 8; DynamoDB item confirmed as 8 | One deliberate action; not concurrency/abuse testing |
-| CloudFront-origin GET | HTTP 200 with count JSON | No deliberate POST from production CloudFront origin |
-| Manual upload | S3 upload successful; CloudFront `/*` invalidation completed | No AWS deployment automation |
-| Public React site | New React app loads from CloudFront | Confirmation reported by user |
-| Production smoke checks | 6/6: homepage/design, navigation/theme/dialogs, MoniKey diagrams, PDF download, `/?project=monikey`, browser Console | User-reported result |
-| Network smoke checks | HTML, JS, CSS, resume and API GET HTTP 200 | User-reported result |
-| Origin protection | Private S3, OAC, default root object and rollback backup confirmed | Actual policy documents not stored in repo |
-| Live backend source provenance | Owner confirmed API Gateway invokes unqualified Lambda / `$LATEST` and AWS `CodeSha256` exactly equals the recovered deployment ZIP SHA256 (Base64) on 2026-10-30 | AWS control-plane output not independently fetched; fingerprint only establishes package at time checked |
+## GitHub Actions checks
 
-The user explicitly reported **no deliberate production POST** during deployment smoke testing. Live GET and local POST tests were separate. Do not claim unique-visitor detection, load testing, automatic release delivery, end-to-end authorization verification, or production POST verification.
+- PR #4: `build-and-test` passed; `Deploy V2 to AWS` was skipped for the pull request.
+- Manual OIDC deployment: [workflow run 41213992608](https://github.com/Jeysibn/cloud-resume-challenge/actions/runs/41213992608) passed both build and deployment jobs.
 
-## Re-run after changing application files
+The deployment workflow runs checks and builds a website artifact. Only a manual run on `main` deploys it.
 
-From `frontend/app`:
+## Live checks
 
-```bash
-npm ci
-npm run typecheck
-npm run lint
-npm test -- --run
-npm run build
-npm run test:metadata
-npm run perf:budget
-npm run test:ui
-npm audit
-npm audit --omit=dev
-```
+- The live homepage returned HTTP 200 after the first OIDC deployment.
+- The published JavaScript contained the V2 API endpoint.
+- `GET /visits` returned HTTP 200 with `{"count":0}` after the counter was initialized.
+- CloudFront accepted the invalidation request from the OIDC deployment workflow.
 
-Browser checks require Playwright prerequisites and a correctly configured local test setup; see `package.json`. Tests that mock `/visits` do **not** verify live API behavior.
+No production POST was sent as part of these checks. POST changes the real counter. The counter tracks recorded actions, not unique visitors.
 
-## Operational follow-up
+## Dependency audit
 
-- Capture actual Console screenshots or redacted configuration notes for S3 versioning, OAC policy, cache policy, API authorization/throttling, Lambda runtime and execution role, DynamoDB billing mode, CloudWatch retention, and billing alerts.
-- Confirm CloudWatch log inspection and alert routing; the current record does not establish they were checked during the final deployment.
-- Keep the previous build for rollback.
-- This record's AWS integration and manual-release steps apply only to V1. Terraform and automated deployment were subsequently implemented for V2; see the current project [README](../README.md) and [architecture](architecture.md).
+The latest recorded `npm audit` on 2026-11-01 found 12 moderate issues in development tooling; `npm audit --omit=dev` found none in production dependencies. See the [dependency security check](../frontend/app/DEPENDENCY-SECURITY-REVIEW.md) for details and recheck commands. This audit is separate from the passing build and tests.
 
-See [architecture](architecture.md), [manual deployment runbook](deployment-runbook.md), and [security report](../frontend/app/DEPENDENCY-SECURITY-REVIEW.md).
+## Version 1 history
+
+V1 was manually deployed in an older AWS project that is now closed. Its 2026-10-30 tests and observations are historical; they are not proof of current V2 behavior. See [architecture](architecture.md) for the current system and V1 distinction.

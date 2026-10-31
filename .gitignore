@@ -25,3 +25,7 @@ __pycache__/
 *.tfplan
 crash.log
 crash.*.log
+
+# Local notes about the closed V1 account; keep them out of published docs.
+docs/terraform-import-plan.md
+docs/terraform-import-plan.md:Zone.Identifier
