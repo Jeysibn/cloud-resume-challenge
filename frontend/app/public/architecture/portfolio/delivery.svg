@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="architecture-title architecture-desc">
-  <title id="architecture-title">Delivery &amp;amp; infrastructure</title>
+  <title id="architecture-title">Delivery &amp; infrastructure</title>
   <desc id="architecture-desc">GitHub Actions validates pull requests. After merge, a maintainer manually runs the frontend workflow using short-lived AWS OIDC credentials. Terraform manages infrastructure and backend Lambda deployments through separately reviewed plans.</desc>
   <defs>
     <style>
