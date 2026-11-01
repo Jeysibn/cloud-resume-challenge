@@ -20,9 +20,13 @@ describe("AWS production metadata", () => {
     expect(template).not.toContain("manually configured infrastructure");
   });
 
-  it("preserves the Azure project URL as labeled historical work", () => {
-    const project = content.projects.find(project => project.slug === "cloud-portfolio")!;
-    expect(project.statusLabel).toBe("AZURE HISTORY");
-    expect(project.liveUrl).toBe("https://jeysibn.github.io/");
+  it("links the live AWS Cloud Resume Challenge rather than the retired Azure deployment", () => {
+    const project = content.projects.find(project => project.slug === "aws-cloud-resume-challenge")!;
+    expect(project.title).toBe("AWS Cloud Resume Challenge");
+    expect(project.statusLabel).toBe("AWS LIVE · V2");
+    expect(project.repositoryUrl).toBe("https://github.com/Jeysibn/cloud-resume-challenge");
+    expect(project.liveUrl).toBe("https://jeysibn.dev/");
+    expect(project.details.technologies).toContain("AWS Lambda");
+    expect(project.details.technologies).not.toContain("Azure Functions");
   });
 });
