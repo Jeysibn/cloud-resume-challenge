@@ -17,7 +17,7 @@ describe("project index", () => {
     expect(screen.getAllByRole("button", { name: /^View case study:/ })).toHaveLength(projects.length);
   });
 
-  it("features Homelab GitOps and Cloud-Backed Portfolio and lists the others as in progress", () => {
+  it("features Homelab GitOps and AWS Cloud Resume Challenge and lists the others as in progress", () => {
     render(<ProjectIndex projects={projects} onInspect={vi.fn()} />);
 
     const [featured, building] = screen.getAllByRole("list").filter((list) =>
@@ -25,7 +25,7 @@ describe("project index", () => {
     );
     expect(within(featured).getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual([
       "Homelab GitOps Environment",
-      "Cloud-Backed Portfolio",
+      "AWS Cloud Resume Challenge",
     ]);
     expect(within(building).getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual([
       "MoniKey",
@@ -54,6 +54,6 @@ describe("project index", () => {
 
     const live = screen.getAllByRole("link", { name: /live site/ });
     expect(live).toHaveLength(projects.filter((project) => project.liveUrl).length);
-    expect(live[0]).toHaveAttribute("href", "https://jeysibn.github.io/");
+    expect(live[0]).toHaveAttribute("href", "https://jeysibn.dev/");
   });
 });
