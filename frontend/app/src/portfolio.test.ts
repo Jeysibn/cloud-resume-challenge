@@ -24,10 +24,13 @@ describe("portfolio content contract", () => {
   });
 });
 
-it("labels Azure deployment history separately from the AWS migration", () => {
-  const portfolio = projects.find(project => project.slug === "cloud-portfolio")!;
-  expect(portfolio.statusLabel).toBe("AZURE HISTORY");
-  expect(portfolio.details.summary).toContain("AWS Terraform and CI/CD are not implemented");
+it("describes the live AWS V2 project and retains MoniKey diagram paths", () => {
+  const portfolio = projects.find(project => project.slug === "aws-cloud-resume-challenge")!;
+  expect(portfolio.statusLabel).toBe("AWS LIVE · V2");
+  expect(portfolio.repositoryUrl).toBe("https://github.com/Jeysibn/cloud-resume-challenge");
+  expect(portfolio.details.summary).toContain("Terraform");
+  expect(portfolio.details.technologies).toContain("DynamoDB");
+  expect(portfolio.details.technologies).not.toContain("Azure Functions");
   const monikey = projects.find(project => project.slug === "monikey")!;
   expect(monikey.architecture.diagrams.map(diagram => diagram.svg)).toEqual([
     "/architecture/monikey/application.svg",
