@@ -1,11 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="portfolio-delivery-title portfolio-delivery-desc">
-<title id="portfolio-delivery-title">Cloud-backed portfolio delivery architecture</title><desc id="portfolio-delivery-desc">Phased deployment view showing canonical content validation and knowledge projection alongside frontend, backend, and Terraform delivery paths and their production targets.</desc>
-<defs><style>@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz@6..96&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Manrope:wght@400;600&amp;display=swap');.t{font-family:'Bodoni Moda',serif;fill:#171912}.n{font-family:Manrope,sans-serif;fill:#171912}.m{font-family:'IBM Plex Mono',monospace;fill:#5f625b}.zone{fill:none;stroke:#9b978d}.node{fill:#f5f1e8;stroke:#171912;stroke-width:1.5}.soft{fill:#ded8ca;stroke:#6f7169}.petrol{fill:#d4dfd9;stroke:#275d57;stroke-width:1.5}.focal{fill:#171912;stroke:#e0522d;stroke-width:2}.line{fill:none;stroke:#66695f;stroke-width:2;marker-end:url(#a)}.dash{stroke-dasharray:8 8}.tag{font:500 12px 'IBM Plex Mono';fill:#275d57;letter-spacing:2px}.label{font:500 12px 'IBM Plex Mono';fill:#5f625b}.white{fill:#eee9de}</style><marker id="a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0L10 4L0 8Z" fill="#66695f"/></marker></defs>
-<rect width="1600" height="900" fill="#eee9de"/><text x="64" y="68" class="tag">SYSTEM 01 · DELIVERY</text><text x="64" y="126" class="t" font-size="48">Three paths to production</text><text x="1536" y="68" class="m" font-size="12" text-anchor="end">DEPLOYMENT / CONTROL-PLANE VIEW</text><line x1="64" y1="156" x2="1536" y2="156" stroke="#bbb5aa"/>
-<rect x="64" y="188" width="1472" height="112" class="zone"/><text x="88" y="216" class="tag">SOURCE</text><rect x="304" y="224" width="240" height="52" rx="4" class="node"/><text x="424" y="256" class="n" font-size="16" font-weight="600" text-anchor="middle">Engineer</text><rect x="760" y="216" width="328" height="68" rx="4" class="node"/><text x="924" y="246" class="n" font-size="18" font-weight="600" text-anchor="middle">Portfolio repository</text><text x="924" y="266" class="m" font-size="12" text-anchor="middle">DEV → MAIN</text><path d="M544 250H760" class="line"/><text x="652" y="234" class="label" text-anchor="middle">PUSH / PR</text>
-<rect x="64" y="324" width="1472" height="120" class="zone"/><text x="88" y="352" class="tag">VALIDATION</text><rect x="600" y="356" width="400" height="64" rx="4" class="focal"/><text x="800" y="384" class="n white" font-size="18" font-weight="600" text-anchor="middle">GitHub Actions</text><text x="800" y="404" class="m white" font-size="12" text-anchor="middle">TYPECHECK · TESTS · AUDIT · PLAN</text><path d="M924 284V320H800V356" class="line"/>
-<rect x="64" y="468" width="1472" height="148" class="zone"/><text x="88" y="496" class="tag">DELIVERY PATHS</text><rect x="144" y="520" width="304" height="64" rx="4" class="soft"/><text x="296" y="548" class="n" font-size="18" font-weight="600" text-anchor="middle">Frontend workflow</text><text x="296" y="568" class="m" font-size="12" text-anchor="middle">VITE BUILD</text><rect x="648" y="520" width="304" height="64" rx="4" class="soft"/><text x="800" y="548" class="n" font-size="18" font-weight="600" text-anchor="middle">Backend workflow</text><text x="800" y="568" class="m" font-size="12" text-anchor="middle">FUNCTION PACKAGE</text><rect x="1152" y="520" width="304" height="64" rx="4" class="soft"/><text x="1304" y="548" class="n" font-size="18" font-weight="600" text-anchor="middle">Terraform workflow</text><text x="1304" y="568" class="m" font-size="12" text-anchor="middle">PLAN + APPLY</text><path d="M744 420V476H296V520" class="line"/><path d="M800 420V520" class="line"/><path d="M856 420V476H1304V520" class="line"/>
-<rect x="64" y="640" width="1472" height="164" class="zone"/><text x="88" y="668" class="tag">PRODUCTION TARGETS</text><rect x="112" y="704" width="240" height="64" rx="4" class="petrol"/><text x="232" y="732" class="n" font-size="16" font-weight="600" text-anchor="middle">Publication repo</text><text x="232" y="752" class="m" font-size="12" text-anchor="middle">GENERATED</text><rect x="400" y="704" width="216" height="64" rx="4" class="petrol"/><text x="508" y="742" class="n" font-size="18" font-weight="600" text-anchor="middle">GitHub Pages</text><rect x="696" y="704" width="208" height="64" rx="4" fill="#f1cfc2" stroke="#e0522d" stroke-width="1.5"/><text x="800" y="732" class="n" font-size="16" font-weight="600" text-anchor="middle">GitHub OIDC</text><text x="800" y="752" class="m" font-size="12" text-anchor="middle">AZURE IDENTITY</text><rect x="952" y="704" width="240" height="64" rx="4" class="petrol"/><text x="1072" y="732" class="n" font-size="16" font-weight="600" text-anchor="middle">Function App</text><text x="1072" y="752" class="m" font-size="12" text-anchor="middle">+ SMOKE TESTS</text><rect x="1240" y="696" width="248" height="80" rx="4" class="petrol"/><text x="1364" y="728" class="n" font-size="16" font-weight="600" text-anchor="middle">Azure resources</text><text x="1364" y="748" class="m" font-size="12" text-anchor="middle">COSMOS · TELEMETRY</text><text x="1364" y="764" class="m" font-size="12" text-anchor="middle">REMOTE TF STATE</text>
-<path d="M296 584V704H232" class="line"/><path d="M352 736H400" class="line"/><path d="M800 584V704" class="line"/><path d="M904 736H952" class="line"/><path d="M1304 584V660H856V704" class="line"/><path d="M1304 584V696H1364" class="line"/>
-<line x1="64" y1="840" x2="1536" y2="840" stroke="#bbb5aa"/><text x="64" y="868" class="m" font-size="12">FRONTEND · BACKEND · INFRASTRUCTURE</text><text x="1536" y="868" class="m" font-size="12" text-anchor="end">FEDERATED DELIVERY · REMOTE STATE</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="architecture-title architecture-desc">
+  <title id="architecture-title">Delivery &amp;amp; infrastructure</title>
+  <desc id="architecture-desc">GitHub Actions validates pull requests. After merge, a maintainer manually runs the frontend workflow using short-lived AWS OIDC credentials. Terraform manages infrastructure and backend Lambda deployments through separately reviewed plans.</desc>
+  <defs>
+    <style>
+      .title{font:600 51px system-ui, sans-serif;fill:#171912}
+      .sub{font:600 18px system-ui, sans-serif;fill:#275D57;letter-spacing:3px}
+      .name{font:600 24px system-ui, sans-serif;fill:#171912}
+      .detail{font:400 17px system-ui, sans-serif;fill:#5F625B}
+      .tag{font:600 15px system-ui,sans-serif;fill:#275D57;letter-spacing:1.5px}
+      .note{font:400 18px system-ui,sans-serif;fill:#5F625B}
+      .edge{fill:none;stroke:#5F625B;stroke-width:3;marker-end:url(#arrow)}
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#5F625B"/></marker>
+  </defs>
+  <rect width="1600" height="900" fill="#EEE9DE"/>
+  <text x="80" y="84" class="sub">AWS CLOUD RESUME CHALLENGE · VERSION 2</text>
+  <text x="80" y="157" class="title">Delivery &amp;amp; infrastructure</text>
+  <line x1="80" y1="190" x2="1520" y2="190" stroke="#B8B2A6" stroke-width="2"/>
+  
+<rect x="80" y="228" width="1440" height="240" rx="8" fill="none" stroke="#B8B2A6" stroke-width="2"/>
+<text x="100" y="262" class="tag">FRONTEND · TESTED THEN MANUALLY RELEASED</text>
+<rect x="110" y="303" width="253" height="125" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="110" y="303" width="7" height="125" rx="3" fill="#275D57"/>
+<text x="136" y="338" class="tag">GIT</text>
+<text x="136" y="379" class="name">Pull request</text>
+<text x="136" y="411" class="detail">Code review</text>
+<rect x="405" y="303" width="253" height="125" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="405" y="303" width="7" height="125" rx="3" fill="#275D57"/>
+<text x="431" y="338" class="tag">CI</text>
+<text x="431" y="379" class="name">GitHub Actions</text>
+<text x="431" y="411" class="detail">Types, lint, tests, build</text>
+<rect x="700" y="303" width="253" height="125" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="700" y="303" width="7" height="125" rx="3" fill="#275D57"/>
+<text x="726" y="338" class="tag">CONTROL</text>
+<text x="726" y="379" class="name">Manual dispatch</text>
+<text x="726" y="411" class="detail">Merged main branch</text>
+<rect x="996" y="303" width="230" height="125" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="996" y="303" width="7" height="125" rx="3" fill="#275D57"/>
+<text x="1022" y="338" class="tag">AUTH</text>
+<text x="1022" y="379" class="name">AWS OIDC</text>
+<text x="1022" y="411" class="detail">Temporary credentials</text>
+<rect x="1268" y="303" width="222" height="125" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="1268" y="303" width="7" height="125" rx="3" fill="#275D57"/>
+<text x="1294" y="338" class="tag">DELIVER</text>
+<text x="1294" y="379" class="name">S3 + CloudFront</text>
+<text x="1294" y="411" class="detail">Upload + invalidate</text>
+<path class="edge" d="M363 365 H405"/><path class="edge" d="M658 365 H700"/><path class="edge" d="M953 365 H996"/><path class="edge" d="M1226 365 H1268"/>
+<rect x="80" y="514" width="1440" height="228" rx="8" fill="none" stroke="#B8B2A6" stroke-width="2"/>
+<text x="100" y="547" class="tag">INFRASTRUCTURE &amp; BACKEND · MANUAL TERRAFORM RELEASE</text>
+<rect x="110" y="586" width="340" height="126" rx="9" fill="#F8F5EF" stroke="#CF603F" stroke-width="2"/>
+<rect x="110" y="586" width="7" height="126" rx="3" fill="#CF603F"/>
+<text x="136" y="621" class="tag">SOURCE</text>
+<text x="136" y="662" class="name">Terraform configuration</text>
+<text x="136" y="694" class="detail">V2 state in separate S3 backend</text>
+<rect x="540" y="586" width="340" height="126" rx="9" fill="#F8F5EF" stroke="#CF603F" stroke-width="2"/>
+<rect x="540" y="586" width="7" height="126" rx="3" fill="#CF603F"/>
+<text x="566" y="621" class="tag">REVIEW</text>
+<text x="566" y="662" class="name">Terraform plan</text>
+<text x="566" y="694" class="detail">Inspect proposed resources</text>
+<rect x="972" y="586" width="400" height="126" rx="9" fill="#F8F5EF" stroke="#CF603F" stroke-width="2"/>
+<rect x="972" y="586" width="7" height="126" rx="3" fill="#CF603F"/>
+<text x="998" y="621" class="tag">RELEASE</text>
+<text x="998" y="662" class="name">Manual apply</text>
+<text x="998" y="694" class="detail">Infrastructure / Lambda update</text>
+<path class="edge" d="M450 649 H540"/><path class="edge" d="M880 649 H972"/>
+<text x="110" y="781" class="note">Pull requests do not deploy. Backend CI checks Python and package validity; backend release requires a reviewed Terraform apply.</text>
+
+  <line x1="80" y1="824" x2="1520" y2="824" stroke="#B8B2A6"/>
+  <text x="80" y="855" class="note">jeysibn.dev · ap-southeast-2 · Terraform-managed V2</text>
+</svg>
