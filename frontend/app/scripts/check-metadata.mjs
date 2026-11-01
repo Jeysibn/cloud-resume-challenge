@@ -5,7 +5,7 @@ import { JSDOM } from "jsdom";
 // Check the actual build artifact, including Vite's substitutions and JSON encoding.
 const html = readFileSync(new URL("../dist/index.html", import.meta.url), "utf8");
 const document = new JSDOM(html).window.document;
-const base = "https://d1ezqc8d2heo4m.cloudfront.net/";
+const base = "https://jeysibn.dev/";
 assert.equal(document.querySelector('link[rel="canonical"]').getAttribute("href"), base);
 assert.equal(document.querySelector('meta[property="og:url"]').content, base);
 for (const selector of ['meta[property="og:image"]', 'meta[name="twitter:image"]']) {

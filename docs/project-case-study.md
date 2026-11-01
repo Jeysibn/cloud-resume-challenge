@@ -4,7 +4,7 @@
 
 **Project:** [GitHub Repository](https://github.com/Jeysibn/cloud-resume-challenge)
 
-**Live Website:** [AWS Portfolio](https://d1ezqc8d2heo4m.cloudfront.net/)
+**Live Website:** [jeysibn.dev](https://jeysibn.dev)
 
 ## 1. Project Overview
 
@@ -24,7 +24,7 @@ I used Amazon S3 to store the frontend files and CloudFront to deliver the websi
 
 The S3 bucket is private, meaning users cannot directly access its files over the public internet. Instead, CloudFront uses Origin Access Control (OAC) to securely retrieve the files.
 
-Users access the website through its CloudFront distribution domain name.
+Users access the website at [jeysibn.dev](https://jeysibn.dev). CloudFront is the underlying distribution that serves this custom domain; its distribution endpoint is [d1ezqc8d2heo4m.cloudfront.net](https://d1ezqc8d2heo4m.cloudfront.net/).
 
 **Backend — API Gateway and AWS Lambda**
 
@@ -37,7 +37,7 @@ API Gateway exposes two endpoints:
 
 Both API routes connect to the same Lambda function.
 
-I also configured CORS to allow the frontend's CloudFront domain to access the API using GET and POST requests.
+I configured API Gateway CORS to allow the portfolio's custom domain (and the CloudFront distribution origin) to call the API using GET and POST requests.
 
 **Database — Amazon DynamoDB**
 

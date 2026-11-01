@@ -1,6 +1,6 @@
 # Deploy the live frontend
 
-This guide publishes frontend files to the existing V2 website. It does not create or change AWS infrastructure. The live site is [https://d1ezqc8d2heo4m.cloudfront.net/](https://d1ezqc8d2heo4m.cloudfront.net/).
+This guide publishes frontend files to the existing V2 website. It does not create or change AWS infrastructure. The public site is [https://jeysibn.dev](https://jeysibn.dev), served by CloudFront distribution [d1ezqc8d2heo4m.cloudfront.net](https://d1ezqc8d2heo4m.cloudfront.net/). Keep the ACM DNS validation records at Name.com so AWS Certificate Manager can renew the domain certificate. Continue monitoring AWS billing for the hosting and distribution costs.
 
 ## Before deploying
 
@@ -19,7 +19,7 @@ The workflow builds the site with the V2 API URL, passes the tested files as an 
 
 ## Check the deployment
 
-Wait for both workflow jobs to pass. Then open the [live site](https://d1ezqc8d2heo4m.cloudfront.net/) and check the page, images, resume link, and browser console. The visitor counter’s read-only API check is:
+Wait for both workflow jobs to pass. Then open the [live site](https://jeysibn.dev) and check the page, images, resume link, and browser console. The visitor counter’s read-only API check is:
 
 ```bash
 curl -i https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com/visits

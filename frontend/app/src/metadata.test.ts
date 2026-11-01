@@ -4,7 +4,7 @@ import content from "../../../content/portfolio.json";
 
 describe("AWS production metadata", () => {
   it("uses the intended public URL as canonical content", () => {
-    expect(content.profile.portfolio).toBe("https://d1ezqc8d2heo4m.cloudfront.net/");
+    expect(content.profile.portfolio).toBe("https://jeysibn.dev/");
   });
 
   it("uses shared URL placeholders rather than old hardcoded hosts", () => {

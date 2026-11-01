@@ -13,7 +13,7 @@ The following checks passed against the V2 source during the release preparation
 | Frontend typecheck and lint | Passed |
 | `npm test -- --run` | 58 tests passed in 15 files |
 | Production build | Passed with the V2 API URL |
-| Metadata check | Passed; canonical URL is the V2 CloudFront site |
+| Metadata check | Passed; canonical URL is `https://jeysibn.dev/`, with social preview URLs on the custom domain |
 | Performance budget | Passed: JavaScript bundle is below the configured budget |
 | `git diff --check` | Passed |
 
@@ -70,6 +70,18 @@ Screenshots from the live test:
 ![DynamoDB visitor counter item with count 1](images/testing/dynamodb-visitor-count.png)
 
 This evidence is from a live AWS check, not an automated test. `POST /visits` changes the real counter. The counter tracks recorded actions, not unique visitors.
+
+### Custom domain and follow-up counter check
+
+**Date:** November 1, 2026
+
+**Environment:** AWS V2 (`ap-southeast-2`, Sydney)
+
+**Result:** PASS
+
+The portfolio was opened successfully at [https://jeysibn.dev](https://jeysibn.dev). In a follow-up live test, clicking **Record My Visit** increased the counter from 1 to 2. This is a live production counter update reported after the original Mission 9.1 test; it is not an automated CI test.
+
+The CloudFront distribution remains the delivery layer behind the custom domain. The custom domain is the URL to share publicly.
 
 ## Dependency audit
 
