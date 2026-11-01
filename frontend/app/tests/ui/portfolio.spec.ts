@@ -140,6 +140,66 @@ test.describe("quiet motion", () => {
     expect(repeating).toBe(0);
   });
 
+  test("centres the monogram stage and lets the reflection run once", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settleAnimations(page);
+
+    const monogram = page.locator(".hero .monogram");
+    await expect(monogram).toBeVisible();
+    await expect(monogram).toHaveAttribute("aria-hidden", "true");
+    const sweep = await page.evaluate(() =>
+      document.getAnimations().filter((a) => (a as CSSAnimation).animationName?.startsWith("mono-sweep")).length,
+    );
+    expect(sweep).toBe(0); // finished, nothing left looping
+
+    const centres = await page.evaluate(() =>
+      [".monogram", ".hero-name", ".hero-statement", ".hero-actions"].map((selector) => {
+        const rect = document.querySelector(`.hero ${selector}`)!.getBoundingClientRect();
+        return Math.round(rect.left + rect.width / 2);
+      }),
+    );
+    for (const centre of centres) expect(Math.abs(centre - centres[0])).toBeLessThanOrEqual(2);
+
+    const header = await page.locator(".site-header").boundingBox();
+    const art = await monogram.boundingBox();
+    expect(art!.y).toBeGreaterThanOrEqual(header!.y + header!.height);
+  });
+
+  test("pulls the primary hero action a few pixels toward a fine pointer and springs back", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.startsWith("desktop"), "Fine-pointer coverage is desktop only");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settleAnimations(page);
+    const primary = page.locator(".hero .action-primary");
+    const box = await primary.boundingBox();
+    if (!box) throw new Error("primary action not rendered");
+    const offset = () =>
+      page.locator(".hero .magnet-inner").evaluate((node) => {
+        const { m41, m42 } = new DOMMatrix(getComputedStyle(node).transform);
+        return Math.hypot(m41, m42);
+      });
+
+    await page.mouse.move(box.x + box.width + 24, box.y, { steps: 6 });
+    await expect.poll(offset).toBeGreaterThan(1);
+    expect(await offset()).toBeLessThanOrEqual(4.5);
+
+    await page.mouse.move(4, 4, { steps: 4 });
+    await expect.poll(offset).toBe(0);
+    await expect(primary).toHaveAttribute("href", "#projects");
+  });
+
+  test("keeps the monogram and magnet still with reduced motion", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.startsWith("desktop"), "Fine-pointer coverage is desktop only");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".hero .monogram")).toHaveCSS("animation-name", "none");
+    await expect(page.locator(".hero .monogram-sweep")).toHaveCSS("animation-name", "none");
+    const box = await page.locator(".hero .action-primary").boundingBox();
+    if (!box) throw new Error("primary action not rendered");
+    await page.mouse.move(box.x + box.width / 2 + 20, box.y + 4, { steps: 6 });
+    await page.waitForTimeout(300);
+    await expect(page.locator(".hero .magnet-inner")).toHaveCSS("transform", "none");
+  });
+
   test("reveals sections on scroll and never leaves content hidden", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.locator("html")).toHaveClass(/reveal-on/);

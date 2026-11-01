@@ -138,27 +138,7 @@ a {
   transform: none;
 }
 
-/* Atmosphere: static light pool and film grain. Never animated. ---------- */
-body::before {
-  /* Soft light pool behind the hero. */
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 0 0 auto;
-  height: min(100svh, 960px);
-  background:
-    radial-gradient(
-      60% 55% at 78% 62%,
-      color-mix(in srgb, var(--color-text) 11%, transparent),
-      transparent 70%
-    ),
-    radial-gradient(
-      40% 40% at 6% 0%,
-      color-mix(in srgb, var(--color-text) 5%, transparent),
-      transparent 70%
-    );
-  pointer-events: none;
-}
+/* Atmosphere: static film grain. The hero owns its own light. ------------ */
 body::after {
   /* Static film grain. Decorative only; never interactive. */
   content: "";
@@ -423,40 +403,184 @@ body::after {
   }
 }
 
-/* Hero --------------------------------------------------------------------- */
+/* Hero: Monogram Stage -------------------------------------------------------
+   One centred column: monogram, role, name, divider, introduction, actions,
+   facts. The monogram is the signature object; the name stays the strongest
+   type. Sizes lean on viewport height too, so short screens stay balanced. */
+:root {
+  /* Light theme: satin aluminium arch, gunmetal letters, soft shadow. */
+  --mono-rim-hi: #c9ced3;
+  --mono-rim-mid: #7d858e;
+  --mono-rim-lo: #4a5159;
+  --mono-face-hi: #fbfbf9;
+  --mono-face-lo: #dcdedd;
+  --mono-metal-hi: #56616c;
+  --mono-metal-mid: #343b44;
+  --mono-metal-lo: #1b2026;
+  --mono-edge: rgba(255, 255, 255, 0.2);
+  --mono-depth: rgba(8, 10, 14, 0.62);
+  --mono-bevel: rgba(40, 46, 54, 0.45);
+  --mono-rim-line: rgba(255, 255, 255, 0.6);
+  --mono-grain: 0.16;
+  --mono-glass: 0.7;
+  --mono-sweep: rgba(255, 255, 255, 0.85);
+  --mono-shadow: drop-shadow(0 18px 22px rgba(40, 44, 50, 0.16)) drop-shadow(0 3px 4px rgba(40, 44, 50, 0.12));
+  --mono-contact: rgba(30, 32, 36, 0.22);
+  --stage-light: color-mix(in srgb, #ffffff 82%, transparent);
+}
+:root[data-theme="dark"] {
+  /* Dark theme: brushed gunmetal arch, silver and steel-blue letters. */
+  --mono-rim-hi: #5b6470;
+  --mono-rim-mid: #2b3038;
+  --mono-rim-lo: #15181c;
+  --mono-face-hi: #1e2227;
+  --mono-face-lo: #111316;
+  --mono-metal-hi: #f1f4f7;
+  --mono-metal-mid: #a9b6c3;
+  --mono-metal-lo: #5e6c7b;
+  --mono-edge: rgba(255, 255, 255, 0.7);
+  --mono-depth: rgba(0, 0, 0, 0.75);
+  --mono-bevel: rgba(0, 0, 0, 0.6);
+  --mono-rim-line: rgba(196, 212, 228, 0.45);
+  --mono-grain: 0.22;
+  --mono-glass: 0.85;
+  --mono-sweep: rgba(214, 228, 242, 0.42);
+  --mono-shadow: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.6)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+  --mono-contact: rgba(0, 0, 0, 0.6);
+  --stage-light: color-mix(in srgb, #9fb6cc 13%, transparent);
+}
 .hero {
-  min-height: min(100svh, 940px);
-  padding: calc(var(--header-h) + clamp(40px, 8vh, 96px)) 0 clamp(40px, 7vh, 80px);
+  --mono-size: clamp(104px, min(13vw, 20svh), 188px);
+  --name-size: clamp(2.5rem, min(6.4vw, 9.6svh), 5.5rem);
+  min-height: min(100svh, 980px);
+  padding: calc(var(--header-h) + clamp(20px, 3.6svh, 56px)) 0 clamp(32px, 5svh, 64px);
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
+  text-align: center;
+}
+/* The single light source sits behind the monogram. */
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 50%;
+  width: 100vw;
+  height: 100%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    closest-side at 50% calc(var(--header-h) + 22%),
+    var(--stage-light),
+    transparent 100%
+  );
+  pointer-events: none;
+}
+.monogram {
+  width: var(--mono-size);
+  margin-bottom: clamp(16px, 2.6svh, 30px);
+}
+.monogram-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  filter: var(--mono-shadow);
+}
+.mono-stop-rim-hi { stop-color: var(--mono-rim-hi); }
+.mono-stop-rim-mid { stop-color: var(--mono-rim-mid); }
+.mono-stop-rim-lo { stop-color: var(--mono-rim-lo); }
+.mono-stop-face-hi { stop-color: var(--mono-face-hi); }
+.mono-stop-face-lo { stop-color: var(--mono-face-lo); }
+.mono-stop-metal-hi { stop-color: var(--mono-metal-hi); }
+.mono-stop-metal-mid { stop-color: var(--mono-metal-mid); }
+.mono-stop-metal-lo { stop-color: var(--mono-metal-lo); }
+.mono-stop-edge { stop-color: var(--mono-edge); }
+.mono-stop-sweep { stop-color: var(--mono-sweep); }
+.monogram-contact {
+  fill: var(--mono-contact);
+  filter: blur(3px);
+}
+.monogram-grain {
+  opacity: var(--mono-grain);
+  mix-blend-mode: overlay;
+}
+.monogram-glass {
+  opacity: var(--mono-glass);
+}
+.monogram-bevel {
+  fill: none;
+  stroke: var(--mono-bevel);
+  stroke-width: 1.5;
+}
+.monogram-depth {
+  fill: var(--mono-depth);
+}
+.monogram-letter-edge {
+  fill: none;
+  stroke: var(--mono-edge);
+  stroke-width: 0.6;
+  opacity: 0.5;
+}
+.monogram-rim-edge {
+  fill: none;
+  stroke: var(--mono-rim-line);
+  stroke-width: 0.75;
+}
+.monogram-sweep {
+  opacity: 0;
+  transform: skewX(-18deg);
 }
 .hero-eyebrow {
-  margin: 0 0 20px;
+  margin: 0 0 clamp(12px, 2svh, 18px);
 }
 .hero-name {
   margin: 0;
-  font: 700 var(--type-hero)/0.9 var(--display);
-  letter-spacing: -0.03em;
+  font: 700 var(--name-size) / 0.94 var(--display);
+  letter-spacing: -0.01em;
   text-transform: uppercase;
   text-wrap: balance;
 }
+.hero-name-line {
+  display: block;
+}
+.hero-divider {
+  display: block;
+  width: 56px;
+  height: 1px;
+  margin: clamp(16px, 2.6svh, 28px) 0;
+  background: linear-gradient(90deg, transparent, var(--color-rule-strong) 20% 80%, transparent);
+}
 .hero-statement {
-  max-width: 44ch;
-  margin: clamp(20px, 3vh, 32px) 0 0;
+  max-width: 46ch;
+  margin: 0;
   color: var(--color-muted);
-  font-size: clamp(1.0625rem, 1.6vw, 1.3rem);
-  line-height: 1.55;
+  font-size: clamp(1.0625rem, 1.3vw, 1.2rem);
+  line-height: 1.6;
+  text-wrap: pretty;
 }
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  gap: 12px 12px;
-  margin-top: clamp(28px, 4vh, 40px);
+  gap: 12px;
+  margin-top: clamp(20px, 3svh, 32px);
+}
+.magnet,
+.magnet-inner {
+  display: inline-block;
+}
+.magnet-inner {
+  will-change: transform;
 }
 .hero-actions .hero-link {
-  padding: 8px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 8px 6px;
   color: var(--color-muted);
   font-size: 14px;
   font-weight: 500;
@@ -466,13 +590,13 @@ body::after {
   color: var(--color-strong);
 }
 .hero-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  max-width: 760px;
-  margin: clamp(48px, 9vh, 96px) 0 0;
-  padding-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: clamp(28px, 5vw, 64px);
+  margin: clamp(28px, 4.4svh, 56px) 0 0;
+  padding-top: 16px;
   border-top: 1px solid var(--color-rule);
+  min-width: min(100%, 560px);
 }
 .hero-facts dt {
   margin-bottom: 6px;
@@ -482,14 +606,47 @@ body::after {
   font-size: 15px;
   line-height: 1.5;
 }
+@media (max-width: 999px) {
+  .hero {
+    --mono-size: clamp(104px, 18vw, 150px);
+    --name-size: clamp(2.5rem, 9vw, 4.75rem);
+    min-height: auto;
+  }
+}
 @media (max-width: 600px) {
   .hero {
-    min-height: auto;
-    padding: calc(var(--header-h) + 40px) 0 96px;
+    --mono-size: clamp(96px, 30vw, 124px);
+    --name-size: clamp(2.4rem, 12.6vw, 3.5rem);
+    padding: calc(var(--header-h) + 32px) 0 72px;
+  }
+  .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .hero-actions .magnet,
+  .hero-actions .magnet-inner,
+  .hero-actions .action-primary,
+  .hero-actions .action-secondary {
+    display: flex;
+    width: 100%;
+  }
+  .hero-actions .action-primary,
+  .hero-actions .action-secondary {
+    padding-inline: 14px;
+  }
+  .hero-actions .hero-link {
+    justify-content: center;
   }
   .hero-facts {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 16px;
+    width: 100%;
+  }
+}
+@media (max-width: 360px) {
+  .hero-eyebrow {
+    letter-spacing: 0.14em;
   }
 }
 .system-status {
@@ -1488,26 +1645,72 @@ body:has(.inspection-dialog[open]) {
    that moves something lives in a no-preference query, so reduced motion gets
    the final, fully visible state with no translation. ----------------------- */
 @media (prefers-reduced-motion: no-preference) {
-  /* Hero entrance (plays once per page load, CSS only). */
-  .hero > * {
+  /* Hero entrance (once per load, CSS only): the monogram settles, a single
+     reflection crosses it, then the text follows in reading order. */
+  .monogram {
+    animation: mono-in 900ms var(--ease-out) backwards;
+  }
+  .monogram-sweep {
+    animation: mono-sweep 2400ms cubic-bezier(0.45, 0, 0.25, 1) 700ms;
+  }
+  .hero-eyebrow,
+  .hero-name-line,
+  .hero-statement,
+  .hero-actions,
+  .hero-facts {
     animation: rise var(--motion-enter) var(--ease-out) backwards;
   }
-  .hero > :nth-child(2) {
-    animation-delay: 80ms;
+  .hero-eyebrow {
+    animation-delay: 220ms;
   }
-  .hero > :nth-child(3) {
-    animation-delay: 160ms;
+  .hero-name-line:first-child {
+    animation-delay: 300ms;
   }
-  .hero > :nth-child(4) {
-    animation-delay: 240ms;
+  .hero-name-line + .hero-name-line {
+    animation-delay: 380ms;
   }
-  .hero > :nth-child(5) {
-    animation-delay: 320ms;
+  .hero-divider {
+    animation: divider-in 600ms var(--ease-out) 520ms backwards;
+  }
+  .hero-statement {
+    animation-delay: 560ms;
+  }
+  .hero-actions {
+    animation-delay: 640ms;
+  }
+  .hero-facts {
+    animation-delay: 720ms;
   }
   @keyframes rise {
     from {
       opacity: 0;
       transform: translateY(16px);
+    }
+  }
+  @keyframes mono-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.97);
+    }
+  }
+  @keyframes mono-sweep {
+    0% {
+      opacity: 0;
+      transform: translateX(0) skewX(-18deg);
+    }
+    20%,
+    75% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(300px) skewX(-18deg);
+    }
+  }
+  @keyframes divider-in {
+    from {
+      opacity: 0;
+      transform: scaleX(0);
     }
   }
 
@@ -1595,6 +1798,25 @@ body:has(.inspection-dialog[open]) {
   }
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  /* A second, identical sweep when the visitor rests on the monogram. */
+  .monogram:hover .monogram-sweep {
+    animation-name: mono-sweep-again;
+    animation-delay: 0ms;
+  }
+  @keyframes mono-sweep-again {
+    0% {
+      opacity: 0;
+      transform: translateX(0) skewX(-18deg);
+    }
+    20%,
+    75% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(300px) skewX(-18deg);
+    }
+  }
   .project-card:hover {
     transform: translateY(-3px);
   }

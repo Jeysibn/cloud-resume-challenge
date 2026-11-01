@@ -14,6 +14,8 @@ import { SkillGroups } from "../components/capabilities/SkillGroups";
 import type { SkillSelection } from "../components/capabilities/SkillGroups";
 import { Arrow } from "../components/Arrow";
 import { ProjectIndex } from "../components/projects/ProjectIndex";
+import { Magnet } from "../components/hero/Magnet";
+import { Monogram } from "../components/hero/Monogram";
 
 function Section({
   id,
@@ -46,20 +48,27 @@ function Section({
 }
 
 export function Hero() {
+  const actionsRef = useRef<HTMLDivElement>(null);
+
   return (
     <section id="top" className="hero" aria-labelledby="hero-title">
+      <Monogram />
       <p className="hero-eyebrow">Cloud Support · DevOps · Cloud Engineering</p>
-      <h1 className="hero-name" id="hero-title">
-        Jerome Christian Ibon
+      <h1 className="hero-name" id="hero-title" translate="no">
+        <span className="hero-name-line">Jerome</span>{" "}
+        <span className="hero-name-line">Christian Ibon</span>
       </h1>
+      <span className="hero-divider" aria-hidden="true" />
       <p className="hero-statement">
         Computer Engineering graduate building cloud infrastructure, automated
         delivery pipelines, Kubernetes environments, and observable systems.
       </p>
-      <div className="hero-actions">
-        <a className="action-primary" href="#projects">
-          View work <Arrow dir="down" />
-        </a>
+      <div className="hero-actions" ref={actionsRef}>
+        <Magnet field={actionsRef}>
+          <a className="action-primary" href="#projects">
+            View work <Arrow dir="down" />
+          </a>
+        </Magnet>
         <a className="action-secondary" href="./resume.pdf" download="Jerome-Ibon-Resume.pdf">
           Resume <Arrow dir="down" />
         </a>

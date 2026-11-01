@@ -89,6 +89,29 @@ describe("hero", () => {
     );
   });
 
+  it("sets the name as two lines inside one H1 and keeps the monogram decorative", () => {
+    render(<Hero />);
+
+    const heading = screen.getByRole("heading", { level: 1, name: "Jerome Christian Ibon" });
+    expect(Array.from(heading.querySelectorAll(".hero-name-line"), (line) => line.textContent)).toEqual([
+      "Jerome",
+      "Christian Ibon",
+    ]);
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    const monogram = document.querySelector(".hero .monogram");
+    expect(monogram).toHaveAttribute("aria-hidden", "true");
+    expect(monogram?.querySelector("svg")).toHaveAttribute("focusable", "false");
+  });
+
+  it("wraps only the primary action in the magnet and keeps it a plain link", () => {
+    render(<Hero />);
+
+    const primary = screen.getByRole("link", { name: /View work/ });
+    expect(document.querySelectorAll(".hero .magnet")).toHaveLength(1);
+    expect(document.querySelector(".hero .magnet")).toContainElement(primary);
+    expect(primary.tagName).toBe("A");
+  });
+
   it("keeps the API status out of the hero", () => {
     render(<Hero />);
 
