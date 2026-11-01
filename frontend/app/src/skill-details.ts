@@ -7,10 +7,10 @@ export type SkillDetail = {
 export const skillDetails: Record<string, SkillDetail> = {
   "Cloud & virtualization": {
     summary: "Cloud platforms and virtualization are where I practice provisioning, networking, identity, cost-aware architecture, and reproducible environments.",
-    practice: "This group connects directly to the Azure-backed portfolio, AWS troubleshooting environments, OCI foundations, and the Proxmox/VMware lab work behind my infrastructure practice.",
+    practice: "This group connects to the live AWS Cloud Resume Challenge, AWS troubleshooting environments, OCI foundations, and Proxmox/VMware infrastructure practice. Azure portfolio work is historical.",
     itemDescriptions: {
-      Azure: "Serverless application hosting, monitoring, storage, identity, and infrastructure automation for the portfolio platform.",
-      AWS: "EC2, VPC, subnets, routing, and security groups used to reproduce and troubleshoot customer scenarios.",
+      Azure: "Historical Azure Functions and Cosmos DB portfolio project, plus Azure fundamentals training; the current portfolio is hosted on AWS.",
+      AWS: "S3, CloudFront, API Gateway, Lambda and DynamoDB in the Cloud Resume Challenge, plus EC2, VPC, routing and security groups in troubleshooting environments.",
       "Oracle Cloud Infrastructure": "Cloud foundations covering core OCI services, architecture, security, pricing, and operational concepts.",
       "VMware vSphere": "Virtualization fundamentals used in enterprise infrastructure training and lab-based systems administration.",
       Proxmox: "Homelab virtualization platform used as the infrastructure layer for automated Kubernetes node provisioning.",
@@ -38,10 +38,10 @@ export const skillDetails: Record<string, SkillDetail> = {
   },
   Observability: {
     summary: "Observability gives me evidence before assumptions: health signals, logs, metrics, dashboards, and operational context for troubleshooting.",
-    practice: "The Azure portfolio uses Application Insights and Log Analytics, while the Kubernetes homelab uses Prometheus and Grafana for infrastructure and workload visibility.",
+    practice: "The live AWS portfolio uses CloudWatch Lambda logs; historical Azure work used Application Insights and Log Analytics, while the homelab uses Prometheus and Grafana.",
     itemDescriptions: {
-      "Azure Application Insights": "Application telemetry for requests, failures, latency, exceptions, and production behavior in the serverless portfolio.",
-      "Log Analytics": "Centralized Azure log querying and retention used alongside Application Insights for operational investigation.",
+      "Azure Application Insights": "Historical Azure portfolio telemetry for requests, failures, latency and exceptions; not used by the current AWS deployment.",
+      "Log Analytics": "Historical Azure log-querying practice used alongside Application Insights.",
       Prometheus: "Metrics collection for Kubernetes and workload monitoring in the homelab environment.",
       Grafana: "Dashboards and visualization for turning collected metrics into useful operational views.",
     },
@@ -64,7 +64,7 @@ export const skillDetails: Record<string, SkillDetail> = {
     summary: "These tools support the operational work around the platform: automation, troubleshooting, security operations, case management, and repeatable support workflows.",
     practice: "Python and shell scripting support automation, while Trend Vision One, Jira, and ITIL practices connect the technical work to structured enterprise operations.",
     itemDescriptions: {
-      Python: "Backend and automation language used for Azure Functions and practical scripting tasks.",
+      Python: "Backend language for the AWS Lambda visitor counter, plus Python scripting and historical Azure Functions work.",
       Bash: "Linux shell automation for repeatable administration, validation, and developer workflows.",
       PowerShell: "Windows-focused scripting and administration for systems and support workflows.",
       "Trend Vision One": "Enterprise security platform experience from endpoint-security SaaS technical support and workload-protection training.",
