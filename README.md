@@ -142,7 +142,7 @@ The workflow builds and tests the site, passes the build to a separate deploymen
 
 ## What this project demonstrates
 
-The project moves from manually creating AWS resources in V1 to describing V2 infrastructure with Terraform. It also demonstrates a serverless API, persistent data, isolated Terraform state, least-privilege deployment access, OIDC, automated tests, and a reviewed frontend release process. Azure details in the portfolio describe separate historical work.
+The project moves from manually creating AWS resources in V1 to describing V2 infrastructure with Terraform. It also demonstrates a serverless API, persistent data, isolated Terraform state, least-privilege deployment access, OIDC, automated tests, and a reviewed frontend release process. The older GitHub Pages/Azure portfolio is historical and is no longer the featured portfolio case study.
 
 ## More detail
 

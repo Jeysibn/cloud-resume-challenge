@@ -4,7 +4,8 @@ import { projectFromSearch } from "./projectNavigation";
 
 describe("portfolio project deep links", () => {
   it("resolves canonical project slugs used by assistant navigation", () => {
-    expect(projectFromSearch("?project=cloud-portfolio")).toBe(projects[0]);
+    expect(projectFromSearch("?project=aws-cloud-resume-challenge")).toBe(projects[0]);
+    expect(projectFromSearch("?project=cloud-portfolio")).toBe(projects[0]); // old shared link
     expect(projectFromSearch("?project=homelab-gitops")).toBe(projects[1]);
     expect(projectFromSearch("?project=monikey")).toBe(projects[2]);
     expect(projectFromSearch("?project=noc-report")).toBe(projects[3]);
