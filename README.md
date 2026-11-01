@@ -150,4 +150,5 @@ The project moves from manually creating AWS resources in V1 to describing V2 in
 - [Backend source and packaging](backend/README.md)
 - [Deploy the live frontend](docs/deployment-runbook.md)
 - [Validation record](docs/validation.md)
+- [Project case study](docs/project-case-study.md)
 - [Dependency security check](frontend/app/DEPENDENCY-SECURITY-REVIEW.md)
