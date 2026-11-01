@@ -56,6 +56,12 @@ describe("assistant link resolution", () => {
       repositoryUrl: "https://github.com/Jeysibn/monikey",
     });
 
+    expect(resolveAssistantLink({ id: "project-aws-cloud-resume-challenge", label: "AWS", url: "https://example.com" })).toEqual({
+      type: "project", label: "AWS Cloud Resume Challenge", projectSlug: "aws-cloud-resume-challenge",
+      repositoryUrl: "https://github.com/Jeysibn/cloud-resume-challenge",
+    });
+    expect(resolveAssistantLink({ id: "project-cloud-portfolio", label: "Legacy", url: "https://example.com" })?.type).toBe("project");
+
     expect(projectNavigationUrl("monikey", "https://jeysibn.dev/#experience"))
       .toBe("/?project=monikey");
   });
