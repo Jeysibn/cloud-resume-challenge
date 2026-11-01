@@ -41,7 +41,7 @@ test.describe("portfolio release browser gate", () => {
     await expect(page.locator("#contact")).toBeAttached();
     await expectNoHorizontalOverflow(page);
 
-    for (const title of ["Homelab GitOps Environment", "Cloud-Backed Portfolio", "MoniKey", "NOC Report Builder"]) {
+    for (const title of ["Homelab GitOps Environment", "AWS Cloud Resume Challenge", "MoniKey", "NOC Report Builder"]) {
       await expect(page.getByRole("heading", { level: 4, name: title })).toBeVisible();
     }
   });
@@ -282,8 +282,8 @@ test.describe("mobile portfolio interactions", () => {
     await page.getByRole("button", { name: "Close system inspection" }).click();
     await expect(page).toHaveURL(/\/$/);
 
-    await page.getByRole("button", { name: "View case study: Cloud-Backed Portfolio" }).click();
-    await expect(page).toHaveURL(/\/\?project=cloud-portfolio$/);
+    await page.getByRole("button", { name: "View case study: AWS Cloud Resume Challenge" }).click();
+    await expect(page).toHaveURL(/\/\?project=aws-cloud-resume-challenge$/);
     await page.goBack();
     await expect(page.getByRole("dialog")).toBeHidden();
     await page.goForward();
