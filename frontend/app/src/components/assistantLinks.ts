@@ -44,7 +44,11 @@ export function resolveAssistantLink(
   source: ChatSource,
   currentUrl = typeof window === "undefined" ? portfolioUrl : window.location.href,
 ): AssistantLink | null {
-  const project = projects.find((candidate) => source.id === `project-${candidate.slug}`);
+  // Resolve legacy Azure project references to the current AWS V2 case study.
+  const sourceId = source.id === "project-cloud-portfolio"
+    ? "project-aws-cloud-resume-challenge"
+    : source.id;
+  const project = projects.find((candidate) => sourceId === `project-${candidate.slug}`);
   if (project) {
     return {
       type: "project",
