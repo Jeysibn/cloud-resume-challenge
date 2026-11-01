@@ -200,91 +200,99 @@
     "Studying for HashiCorp Certified: Terraform Associate (004).",
     "Advanced cloud networking and hybrid-cloud topologies.",
     "Improving Kubernetes deployments and GitOps workflows with Helm and Argo CD.",
-    "Continuing to improve the Cloud-Backed Portfolio and Homelab GitOps environment while job hunting."
+    "Continuing to improve the AWS Cloud Resume Challenge and Homelab GitOps environment while job hunting."
   ],
   "projects": [
     {
-      "id": "cloud-portfolio",
-      "slug": "cloud-portfolio",
-      "title": "Cloud-Backed Portfolio",
-      "shortTitle": "Cloud Portfolio",
-      "category": "Serverless cloud platform",
-      "status": "Historical Azure implementation · AWS migration in progress",
-      "statusLabel": "AZURE HISTORY",
-      "repositoryUrl": "https://github.com/Jeysibn/portfolio",
-      "liveUrl": "https://jeysibn.github.io/",
+      "id": "aws-cloud-resume-challenge",
+      "slug": "aws-cloud-resume-challenge",
+      "title": "AWS Cloud Resume Challenge",
+      "shortTitle": "AWS Cloud Resume",
+      "category": "AWS serverless · Infrastructure as Code",
+      "status": "Live · V2",
+      "statusLabel": "AWS LIVE · V2",
+      "repositoryUrl": "https://github.com/Jeysibn/cloud-resume-challenge",
+      "liveUrl": "https://jeysibn.dev/",
       "preview": {
-        "summary": "Historical Azure implementation: A React and TypeScript portfolio on GitHub Pages backed by Python 3.11 Azure Functions for health, visitor counting, and a provider-neutral AI assistant.",
-        "primaryOutcome": "Path-specific GitHub Actions publish the frontend and deploy Azure changes through OIDC, with post-deployment smoke checks.",
+        "summary": "An AWS-hosted React and TypeScript portfolio served through CloudFront and private S3, with a serverless visitor counter using API Gateway, Python Lambda, and DynamoDB.",
+        "primaryOutcome": "Rebuilt the console-based V1 as Terraform-managed V2; GitHub Actions tests changes and uses OIDC for reviewed frontend releases.",
         "flow": {
-          "label": "GitHub Pages → Azure Functions → Cosmos DB → App Insights",
+          "label": "CloudFront → API Gateway → Lambda → DynamoDB",
           "nodes": [
             "WEB",
             "API",
-            "STATE",
-            "OBSERVE"
+            "LAMBDA",
+            "DATA"
           ],
-          "accessible": "React and Vite on GitHub Pages, Python Azure Functions, Cosmos DB, and Application Insights telemetry."
+          "accessible": "CloudFront serves the React website from private S3; the browser calls API Gateway, which invokes Lambda to read or update DynamoDB."
         },
         "technologies": [
+          "AWS",
           "React",
           "TypeScript",
-          "Azure Functions",
           "Terraform",
           "GitHub Actions"
         ]
       },
       "details": {
-        "summary": "Historical Azure project, retained as actual project history. This AWS migration uses a manually configured visitor API; AWS Terraform and CI/CD are not implemented. A portfolio that treats a personal website like a real service: infrastructure as code, automated delivery, serverless APIs, observability, deployment verification, and an AI assistant.",
-        "purpose": "Move beyond static hosting and demonstrate practical Cloud and DevOps engineering through a small, cost-conscious system that is automated, observable, and reproducible.",
+        "summary": "Version 2 is live at jeysibn.dev. A React and TypeScript portfolio served through private Amazon S3 and CloudFront, with a Python Lambda visitor counter behind API Gateway and DynamoDB persistence. V1 was built manually in an older AWS project that is now closed; V2 is managed through Terraform.",
+        "purpose": "Build a real, understandable serverless AWS deployment, then demonstrate the transition from manual console provisioning to reproducible infrastructure and controlled CI/CD.",
         "outcomes": [
-          "Serverless backend avoids idle application-server cost while keeping dynamic visitor and AI capabilities.",
-          "Terraform manages Azure infrastructure and keeps production configuration reviewable in Git.",
-          "GitHub Actions validates changes, authenticates to Azure with OIDC, deploys by path, and verifies backend health after deployment.",
-          "Application Insights and Log Analytics provide request, failure, latency, exception, and structured operational telemetry."
+          "Delivered the portfolio over HTTPS from CloudFront using Origin Access Control to keep the S3 website bucket private.",
+          "Connected an explicit visitor action to API Gateway, Python Lambda, and DynamoDB; confirmed the count persists across refreshes.",
+          "Defined V2 AWS infrastructure in Terraform with separate remote state, allowing changes to be reviewed as plans.",
+          "Added GitHub Actions pull-request checks and OIDC-based frontend deployment on manual workflow dispatch after merge."
         ],
         "highlights": [
-          "Azure Functions Python v2 API with dedicated health, visitor-counter, and AI-assistant routes.",
-          "Cosmos DB persistence with hashed visitor identifiers and TTL-based cleanup for rate-limit records.",
-          "Remote Terraform state, protected production workflow, dependency auditing, and secret-safe OIDC deployment.",
-          "The frontend keeps AI provider branding neutral while the provider secret remains backend-only."
+          "GET /visits reads the current count; POST /visits records a button click. A page view alone does not increment the count.",
+          "API Gateway HTTP API invokes a Python 3.14 Lambda function with narrow DynamoDB permissions.",
+          "CloudFront serves the Vite production build from a private S3 bucket through OAC; custom domain is jeysibn.dev.",
+          "GitHub Actions runs frontend typecheck, lint, unit tests and build; backend CI runs Python tests, syntax checks and package validation.",
+          "Frontend releases are manually triggered through GitHub Actions with temporary OIDC credentials; backend Lambda deployment is manual through a reviewed Terraform plan.",
+          "CloudWatch logs help verify Lambda requests and investigate failures."
         ],
         "technologies": [
           "React",
           "TypeScript",
           "Vite",
-          "Azure Functions",
-          "Cosmos DB",
+          "Amazon S3",
+          "Amazon CloudFront",
+          "API Gateway",
+          "AWS Lambda",
+          "Python",
+          "DynamoDB",
           "Terraform",
           "GitHub Actions",
-          "Application Insights",
-          "Log Analytics"
+          "CloudWatch"
         ],
         "architectureFlows": [
           {
             "label": "Runtime request",
             "nodes": [
               "Visitor",
-              "GitHub Pages",
-              "Azure Functions",
-              "Cosmos DB"
+              "CloudFront + private S3",
+              "API Gateway",
+              "Lambda",
+              "DynamoDB"
             ]
           },
           {
-            "label": "Frontend delivery",
+            "label": "Frontend release",
             "nodes": [
-              "Git",
-              "GitHub Actions",
-              "GitHub Pages"
+              "Pull request checks",
+              "Merge to main",
+              "Manual GitHub Actions",
+              "OIDC AWS role",
+              "S3 + CloudFront invalidation"
             ]
           },
           {
-            "label": "Backend and infrastructure delivery",
+            "label": "Infrastructure and backend",
             "nodes": [
-              "Git",
-              "GitHub Actions",
-              "OIDC",
-              "Azure infrastructure"
+              "Terraform plan",
+              "Reviewed apply",
+              "AWS resources + Lambda",
+              "Read-only API smoke test"
             ]
           }
         ]
@@ -293,76 +301,78 @@
         "diagrams": [
           {
             "id": "portfolio-runtime",
-            "title": "Runtime architecture",
+            "title": "AWS runtime architecture",
             "svg": "/architecture/portfolio/runtime.svg",
-            "description": "Container-level view of visitor traffic through GitHub Pages and Azure Functions, including state, the external AI provider, and Azure-native telemetry.",
+            "description": "AWS V2 flow: a visitor loads the React site from CloudFront and private S3; API Gateway invokes Python Lambda for the DynamoDB visitor counter.",
             "summary": [
-              "Visitors load the React and TypeScript application from GitHub Pages, then call the Python Azure Function over CORS-enabled HTTPS.",
-              "The Function App exposes health, visitor-counter, and portfolio-assistant routes; Cosmos DB stores counter and rate-limit state.",
-              "Application Insights sends request and exception telemetry to the dedicated Log Analytics workspace."
+              "CloudFront serves the React and TypeScript build from a private S3 bucket via Origin Access Control over HTTPS.",
+              "The browser reads GET /visits and sends POST /visits only when a visitor clicks Record My Visit.",
+              "API Gateway invokes the Python Lambda function, which reads or updates the DynamoDB count. CloudWatch stores Lambda logs."
             ]
           },
           {
             "id": "portfolio-delivery",
-            "title": "Delivery & infrastructure",
+            "title": "AWS delivery architecture",
             "svg": "/architecture/portfolio/delivery.svg",
-            "description": "Path-specific delivery view showing validation, GitHub Pages publication, Azure OIDC deployment, Terraform provisioning, and post-deployment verification.",
+            "description": "Reviewed V2 delivery: frontend pull-request tests, manual GitHub Actions OIDC S3 deploy, CloudFront invalidation, and separate Terraform-backed infrastructure and Lambda release.",
             "summary": [
-              "Pull requests validate the frontend, backend, dependencies, and Terraform plan before production changes are merged.",
-              "Frontend artifacts are published to the dedicated Pages repository; backend packages and Terraform changes reach Azure through federated OIDC.",
-              "Terraform state remains in a separate Azure Storage backend, while backend deployment finishes with health and visitor API smoke checks."
+              "Pull requests run frontend typecheck, lint, unit tests, build, and backend Python validation, without deploying.",
+              "After merge, a manual workflow authenticates to AWS with OIDC, uploads frontend files to S3, and invalidates CloudFront.",
+              "Terraform manages V2 AWS resources in a separate state backend; backend Lambda updates use a manually reviewed Terraform plan."
             ]
           }
         ]
       },
       "knowledge": {
-        "purpose": "A small, cost-conscious portfolio platform that also demonstrates cloud and DevOps engineering through serverless APIs, Infrastructure as Code, automated delivery, observability, and deployment verification.",
-        "status_detail": "Live system and source-controlled project. The frontend is published at https://jeysibn.github.io/.",
-        "experience_boundary": "Personal portfolio project; it demonstrates production-oriented engineering practices but is not professional employment experience.",
+        "purpose": "AWS Cloud Resume Challenge V2: a working portfolio demonstrating serverless AWS architecture, Terraform-managed infrastructure, verified API integration, and GitHub Actions CI with manually controlled releases.",
+        "status_detail": "Version 2 is live at https://jeysibn.dev/. Version 1 was manually built in an older AWS project that is now closed; its resources are not the live site.",
+        "experience_boundary": "This is a personal learning project, not professional employment experience or a high-scale production service.",
         "architecture": {
-          "frontend": "React and TypeScript single-page application built with Vite. The generated artifact is published to the Jeysibn/jeysibn.github.io repository and served by GitHub Pages.",
-          "backend": "Python 3.11 Azure Functions using the Python v2 programming model.",
-          "state": "Azure Cosmos DB NoSQL API with PortfolioDB, Counter, and VisitorIPs containers. Visitor and rate-limit identifiers are HMAC-derived before persistence; VisitorIPs has a 24-hour TTL.",
-          "infrastructure": "Terraform with AzureRM in Azure Korea Central; remote Terraform state is stored in Azure Blob Storage.",
-          "delivery": "GitHub Actions validates changes, uses GitHub OIDC federation with Microsoft Entra ID for Azure, publishes the frontend to the Pages repository, and runs backend smoke checks after deployment.",
-          "observability": "Workspace-based Application Insights and Log Analytics capture request, latency, failure, exception, and structured operational telemetry.",
-          "assistant": "The portfolio-specific assistant uses an OpenAI-compatible provider behind the backend; provider secrets remain server-side and the frontend uses neutral branding."
+          "frontend": "React, TypeScript and Vite production build hosted in a private Amazon S3 bucket. Amazon CloudFront serves it via Origin Access Control at https://jeysibn.dev/.",
+          "backend": "API Gateway HTTP API routes GET and POST /visits to a Python 3.14 AWS Lambda handler; GET reads and POST conditionally increments the counter.",
+          "state": "Amazon DynamoDB stores one item keyed by id=visitors with a numeric count. Terraform provisions the table; the initial item is configured separately.",
+          "infrastructure": "Terraform manages V2 resources in ap-southeast-2 and uses separate remote S3 state. V1 state from the closed manual project is not reused.",
+          "delivery": "GitHub Actions validates frontend changes on pull requests. After merge, a manually dispatched frontend workflow authenticates using AWS OIDC, uploads assets then index.html to S3, and invalidates CloudFront. Backend CI runs tests, syntax checks and ZIP checks; Lambda deployment is manual through Terraform.",
+          "observability": "Amazon CloudWatch Lambda logs support verifying requests and troubleshooting. The project does not claim full application-wide telemetry or automated alerting.",
+          "assistant": "The current AWS visitor-counter architecture does not include the former Azure project's provider-backed AI assistant API."
         },
         "security_decisions": [
-          "GitHub Actions uses short-lived OIDC tokens for Azure instead of a reusable Azure service-principal secret.",
-          "Visitor IPs are never persisted in plaintext; HMAC-derived identifiers support counting and rate limiting.",
-          "Request validation, bounded history, backend-authoritative hourly quota, and response sanitization protect the public assistant endpoint.",
-          "Secrets and Terraform state are kept outside the frontend bundle and public knowledge content."
+          "S3 website bucket is private and accessed by CloudFront through Origin Access Control.",
+          "GitHub Actions assumes a restricted AWS role using short-lived OIDC credentials instead of long-lived AWS access keys.",
+          "Lambda has scoped DynamoDB IAM permissions; Terraform keeps separate V2 state.",
+          "API Gateway CORS restricts browser origins but is not authentication or abuse protection."
         ],
-        "ci_cd": "Development validation covers frontend typecheck/build, backend Ruff/pytest, and Terraform validation. Main merges use path-specific frontend, backend, and infrastructure deployment workflows with post-deployment verification.",
-        "infrastructure": "GitHub Pages, Azure Functions on the Consumption plan, Azure Cosmos DB, Application Insights, Log Analytics, Azure Blob Storage for Terraform state, and Azure Korea Central resources managed by Terraform.",
-        "observability": "Application Insights and Log Analytics receive Azure Function telemetry and privacy-conscious structured assistant events; deployment workflows verify health and the deployed revision without writing visitor analytics.",
-        "data_storage": "Cosmos DB stores the visitor counter and per-visitor rate-limit records. The frontend stores only the browser chat history and an opaque session routing identifier in sessionStorage.",
+        "ci_cd": "Frontend CI checks typecheck, lint, unit tests and build for pull requests. Manual GitHub Actions workflow deploys frontend after merge using AWS OIDC. Backend CI validates Python source and ZIP; Lambda updates deploy manually through Terraform.",
+        "infrastructure": "Private Amazon S3 website bucket, CloudFront with OAC and custom domain, API Gateway HTTP API, Python AWS Lambda, DynamoDB, CloudWatch, Terraform and GitHub Actions in AWS ap-southeast-2.",
+        "observability": "CloudWatch logs provide basic evidence that Lambda processed counter requests and help diagnose errors.",
+        "data_storage": "DynamoDB holds the counter, which reflects recorded button clicks rather than unique visitors or ordinary page views.",
         "engineering_decisions": [
-          "Serverless consumption hosting avoids an always-on application server for a low-traffic portfolio.",
-          "Behavior instructions stay separate from approved factual content so prompt changes and portfolio facts can be reviewed independently.",
-          "Runtime readiness is checked after deployment rather than inferred from package upload success."
+          "Built V1 manually to understand AWS services before rebuilding the same core system as Terraform-managed V2.",
+          "Kept counter reads separate from explicit POST recording to avoid inflating the count when pages refresh.",
+          "Reserved frontend deployment for a manual post-merge action and backend deployment for manual review of a Terraform plan."
         ],
         "operational_lessons": [
-          "Optional provider configuration must initialize lazily so unrelated Function routes remain indexable.",
-          "Operational telemetry should contain metadata rather than secrets or full visitor conversations.",
-          "Deployment success and dependency-backed runtime health are separate signals."
+          "Private S3 and CloudFront OAC secure static origin access without exposing the bucket.",
+          "CI passing is not the same as code being deployed; deployment must be triggered and verified separately.",
+          "Read-only GET smoke checks do not mutate live counter data; POST tests do."
         ],
         "limitations": [
-          "The assistant depends on an external OpenAI-compatible provider and can be temporarily unavailable.",
-          "The AI question quota is per HMAC-derived visitor identity and hour, not a strict browser-session quota.",
-          "The portfolio corpus is small and currently uses deterministic retrieval; vector search is intentionally deferred."
+          "The counter counts button clicks, not unique visitors, and the public API endpoints are unauthenticated.",
+          "CORS and a frontend click lock are not backend authorization or protection from scripted requests.",
+          "The V1 AWS environment is closed and not live.",
+          "Backend Lambda updates are not automatically deployed from GitHub Actions."
         ],
         "claims_not_to_make": [
-          "Do not describe this as a high-scale or revenue-producing production platform.",
-          "Do not claim the assistant has live repository retrieval or a vector database.",
-          "Do not expose API keys, visitor IPs, Terraform state, or internal provider configuration."
+          "Do not claim that the site is still hosted on GitHub Pages or that Azure Functions/Cosmos DB power its current visitor counter.",
+          "Do not claim the V1 AWS project is live or that the V2 backend is auto-deployed on merge.",
+          "Do not call the recorded click count a count of unique visitors.",
+          "Do not describe the project as commercial/high-scale production or claim AWS credentials are stored in the frontend."
         ],
         "source": {
-          "id": "project-cloud-portfolio",
-          "label": "Cloud-Backed Portfolio",
-          "url": "https://github.com/Jeysibn/portfolio",
-          "last_verified": "2026-09-15"
+          "id": "project-aws-cloud-resume-challenge",
+          "label": "AWS Cloud Resume Challenge",
+          "url": "https://github.com/Jeysibn/cloud-resume-challenge",
+          "last_verified": "2026-11-01"
         }
       }
     },
