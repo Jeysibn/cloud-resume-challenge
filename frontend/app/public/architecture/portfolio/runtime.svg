@@ -1,20 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="portfolio-runtime-title portfolio-runtime-desc">
-<title id="portfolio-runtime-title">Cloud-backed portfolio runtime architecture</title><desc id="portfolio-runtime-desc">Container view tracing a visitor from GitHub Pages to the Python Azure Functions API, its approved local knowledge projection and deterministic retrieval, Cosmos DB, an external OpenAI-compatible AI provider, Application Insights, and Log Analytics.</desc>
-<defs><style>@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz@6..96&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Manrope:wght@400;600&amp;display=swap');.t{font-family:'Bodoni Moda',serif;fill:#171912}.n{font-family:Manrope,sans-serif;fill:#171912}.m{font-family:'IBM Plex Mono',monospace;fill:#5f625b}.zone{fill:none;stroke:#9b978d;stroke-width:1}.node{fill:#f5f1e8;stroke:#171912;stroke-width:1.5}.secondary{fill:#ded8ca;stroke:#275d57;stroke-width:1.5}.focal{fill:#171912;stroke:#e0522d;stroke-width:2}.line{fill:none;stroke:#66695f;stroke-width:2;marker-end:url(#arrow)}.dash{stroke-dasharray:8 8}.label{font:500 12px 'IBM Plex Mono';fill:#5f625b;letter-spacing:1px}.tag{font:500 12px 'IBM Plex Mono';fill:#275d57;letter-spacing:2px}.white{fill:#eee9de}</style><marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0 0L10 4L0 8Z" fill="#66695f"/></marker></defs>
-<rect width="1600" height="900" fill="#eee9de"/><text x="64" y="68" class="tag">SYSTEM 01 · RUNTIME</text><text x="64" y="126" class="t" font-size="48">Cloud-backed portfolio</text><text x="1536" y="68" class="m" font-size="12" text-anchor="end">C4 · CONTAINER VIEW</text><line x1="64" y1="156" x2="1536" y2="156" stroke="#bbb5aa"/>
-<rect x="64" y="196" width="1472" height="144" class="zone"/><text x="88" y="224" class="tag">CLIENT / PUBLIC WEB</text>
-<rect x="176" y="248" width="248" height="64" rx="4" class="node"/><text x="300" y="276" class="n" font-size="16" font-weight="600" text-anchor="middle">Portfolio visitor</text><text x="300" y="296" class="m" font-size="12" text-anchor="middle">PUBLIC CLIENT</text>
-<rect x="624" y="236" width="352" height="88" rx="4" class="node"/><text x="800" y="272" class="n" font-size="18" font-weight="600" text-anchor="middle">GitHub Pages</text><text x="800" y="296" class="m" font-size="12" text-anchor="middle">REACT + TYPESCRIPT SPA</text>
-<path d="M424 280H624" class="line"/><text x="524" y="264" class="label" text-anchor="middle">HTTPS</text>
-<rect x="64" y="380" width="1472" height="160" class="zone"/><text x="88" y="408" class="tag">APPLICATION API · AZURE</text>
-<rect x="600" y="432" width="400" height="76" rx="4" class="focal"/><text x="800" y="464" class="n white" font-size="20" font-weight="600" text-anchor="middle">Azure Functions</text><text x="800" y="488" class="m white" font-size="12" text-anchor="middle">PYTHON 3.11 · HEALTH · VISITORS · ASSISTANT</text><rect x="1060" y="432" width="360" height="76" rx="4" class="secondary"/><text x="1240" y="464" class="n" font-size="17" font-weight="600" text-anchor="middle">Approved knowledge</text><text x="1240" y="488" class="m" font-size="12" text-anchor="middle">LOCAL · DETERMINISTIC RETRIEVAL</text>
-<path d="M800 324V432" class="line"/><text x="820" y="374" class="label">CORS JSON</text><path d="M1000 470H1060" class="line"/><text x="1030" y="456" class="label" text-anchor="middle">RETRIEVE</text>
-<rect x="64" y="580" width="1472" height="224" class="zone"/><text x="88" y="608" class="tag">STATE / EXTERNAL SERVICE / OBSERVABILITY</text>
-<rect x="120" y="664" width="280" height="76" rx="4" class="secondary"/><text x="260" y="696" class="n" font-size="18" font-weight="600" text-anchor="middle">Cosmos DB</text><text x="260" y="720" class="m" font-size="12" text-anchor="middle">COUNTER + VISITOR STATE</text>
-<rect x="480" y="664" width="280" height="76" rx="4" class="node" stroke-dasharray="7 5"/><text x="620" y="696" class="n" font-size="18" font-weight="600" text-anchor="middle">External AI provider</text><text x="620" y="720" class="m" font-size="12" text-anchor="middle">OPENAI-COMPATIBLE API</text>
-<rect x="840" y="664" width="280" height="76" rx="4" class="secondary"/><text x="980" y="696" class="n" font-size="18" font-weight="600" text-anchor="middle">Application Insights</text><text x="980" y="720" class="m" font-size="12" text-anchor="middle">RUNTIME TELEMETRY</text>
-<rect x="1200" y="664" width="280" height="76" rx="4" class="secondary"/><text x="1340" y="696" class="n" font-size="18" font-weight="600" text-anchor="middle">Log Analytics</text><text x="1340" y="720" class="m" font-size="12" text-anchor="middle">WORKSPACE</text>
-<path d="M720 508V572H260V664" class="line"/><path d="M772 508V596H620V664" class="line"/><path d="M828 508V596H980V664" class="line dash"/><path d="M1120 702H1200" class="line"/>
-<text x="248" y="564" class="label">READ / WRITE</text><text x="492" y="588" class="label">CHAT COMPLETIONS</text><text x="996" y="588" class="label">TELEMETRY</text><text x="1160" y="686" class="label" text-anchor="middle">EXPORT</text>
-<line x1="64" y1="840" x2="1536" y2="840" stroke="#bbb5aa"/><text x="64" y="868" class="m" font-size="12">PRIMARY PATH · VISITOR → SPA → SERVERLESS API</text><text x="1536" y="868" class="m" font-size="12" text-anchor="end">REPOSITORY-DERIVED · 2026-09-11</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="architecture-title architecture-desc">
+  <title id="architecture-title">Runtime architecture</title>
+  <desc id="architecture-desc">CloudFront serves the React site from private Amazon S3 using Origin Access Control. The browser calls the API Gateway HTTP API, invoking Python Lambda to read or increment the DynamoDB counter. CloudWatch stores Lambda logs.</desc>
+  <defs>
+    <style>
+      .title{font:600 51px system-ui, sans-serif;fill:#171912}
+      .sub{font:600 18px system-ui, sans-serif;fill:#275D57;letter-spacing:3px}
+      .name{font:600 24px system-ui, sans-serif;fill:#171912}
+      .detail{font:400 17px system-ui, sans-serif;fill:#5F625B}
+      .tag{font:600 15px system-ui,sans-serif;fill:#275D57;letter-spacing:1.5px}
+      .note{font:400 18px system-ui,sans-serif;fill:#5F625B}
+      .edge{fill:none;stroke:#5F625B;stroke-width:3;marker-end:url(#arrow)}
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#5F625B"/></marker>
+  </defs>
+  <rect width="1600" height="900" fill="#EEE9DE"/>
+  <text x="80" y="84" class="sub">AWS CLOUD RESUME CHALLENGE · VERSION 2</text>
+  <text x="80" y="157" class="title">Runtime architecture</text>
+  <line x1="80" y1="190" x2="1520" y2="190" stroke="#B8B2A6" stroke-width="2"/>
+  
+<rect x="80" y="224" width="1440" height="185" rx="8" fill="none" stroke="#B8B2A6" stroke-width="2"/>
+<text x="100" y="253" class="tag">STATIC SITE DELIVERY · HTTPS</text>
+<rect x="110" y="272" width="262" height="125" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="110" y="272" width="7" height="125" rx="3" fill="#275D57"/>
+<text x="136" y="307" class="tag">01 · CLIENT</text>
+<text x="136" y="348" class="name">Visitor browser</text>
+<text x="136" y="380" class="detail">React + TypeScript</text>
+<rect x="466" y="272" width="295" height="125" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="466" y="272" width="7" height="125" rx="3" fill="#275D57"/>
+<text x="492" y="307" class="tag">02 · EDGE</text>
+<text x="492" y="348" class="name">CloudFront</text>
+<text x="492" y="380" class="detail">OAC + custom domain</text>
+<rect x="855" y="272" width="295" height="125" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="855" y="272" width="7" height="125" rx="3" fill="#275D57"/>
+<text x="881" y="307" class="tag">03 · ORIGIN</text>
+<text x="881" y="348" class="name">Private S3 bucket</text>
+<text x="881" y="380" class="detail">Built Vite assets</text>
+<path class="edge" d="M372 334 H466"/>
+<path class="edge" d="M761 334 H855"/>
+<rect x="80" y="456" width="1440" height="285" rx="8" fill="none" stroke="#B8B2A6" stroke-width="2"/>
+<text x="100" y="487" class="tag">VISITOR COUNTER · EXPLICIT USER ACTION</text>
+<rect x="110" y="531" width="270" height="135" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="110" y="531" width="7" height="135" rx="3" fill="#275D57"/>
+<text x="136" y="566" class="tag">GET / POST</text>
+<text x="136" y="607" class="name">API Gateway</text>
+<text x="136" y="639" class="detail">Public HTTP API</text>
+<rect x="481" y="531" width="278" height="135" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="481" y="531" width="7" height="135" rx="3" fill="#275D57"/>
+<text x="507" y="566" class="tag">COMPUTE</text>
+<text x="507" y="607" class="name">Python Lambda</text>
+<text x="507" y="639" class="detail">Python 3.14</text>
+<rect x="860" y="531" width="280" height="135" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="860" y="531" width="7" height="135" rx="3" fill="#275D57"/>
+<text x="886" y="566" class="tag">PERSISTENCE</text>
+<text x="886" y="607" class="name">DynamoDB</text>
+<text x="886" y="639" class="detail">Recorded visit count</text>
+<rect x="1235" y="531" width="250" height="135" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
+<rect x="1235" y="531" width="7" height="135" rx="3" fill="#275D57"/>
+<text x="1261" y="566" class="tag">LOGS</text>
+<text x="1261" y="607" class="name">CloudWatch</text>
+<text x="1261" y="639" class="detail">Lambda diagnostics</text>
+<path class="edge" d="M380 599 H481"/>
+<path class="edge" d="M759 599 H860"/>
+<path class="edge" d="M1140 599 H1235"/>
+<path class="edge" d="M241 397 V457 H245 V531"/>
+<text x="275" y="447" class="detail">Browser calls /visits</text>
+<text x="110" y="716" class="note">GET reads the count. POST increments only after “Record My Visit” is clicked. The count is not unique visitors.</text>
+
+  <line x1="80" y1="824" x2="1520" y2="824" stroke="#B8B2A6"/>
+  <text x="80" y="855" class="note">jeysibn.dev · ap-southeast-2 · Terraform-managed V2</text>
+</svg>
