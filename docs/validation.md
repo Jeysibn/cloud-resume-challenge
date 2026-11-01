@@ -33,7 +33,43 @@ The deployment workflow runs checks and builds a website artifact. Only a manual
 - `GET /visits` returned HTTP 200 with `{"count":0}` after the counter was initialized.
 - CloudFront accepted the invalidation request from the OIDC deployment workflow.
 
-No production POST was sent as part of these checks. POST changes the real counter. The counter tracks recorded actions, not unique visitors.
+During the initial deployment checks, no production POST request was sent. A later end-to-end test on November 1, 2026 verified the POST functionality. The counter tracks recorded actions, not unique visitors.
+
+### Mission 9.1 — Visitor Counter End-to-End Test
+
+**Date:** November 1, 2026
+
+**Environment:** AWS V2 (`ap-southeast-2`, Sydney)
+
+**Overall Result:** PASS
+
+**Objective:** Verify that the visitor counter works correctly from the frontend through the AWS backend and database.
+
+| Test | Expected Result | Actual Result | Status |
+| --- | --- | --- | --- |
+| Initial counter | Displays 0 | Displayed 0 | PASS |
+| Record My Visit button | Increases count by 1 | Changed from 0 to 1 | PASS |
+| DynamoDB verification | Stores the updated count | Count was 1 | PASS |
+| CloudWatch verification | Logs the Lambda POST request | POST request recorded | PASS |
+| Browser refresh | Retains the saved count | Still displayed 1 | PASS |
+
+**Conclusion:**
+
+The visitor counter passed end-to-end testing. Clicking the Record My Visit button updated the displayed count from 0 to 1. DynamoDB stored the updated value, and CloudWatch recorded the POST request.
+
+After refreshing the website, the counter remained at 1, confirming that the frontend could retrieve the persisted count.
+
+No infrastructure changes were required during this test.
+
+Screenshots from the live test:
+
+![Portfolio footer showing one recorded visit](images/testing/visitor-counter-frontend.jpg)
+
+![CloudWatch record for the successful POST /visits request](images/testing/api-post-visit-response.png)
+
+![DynamoDB visitor counter item with count 1](images/testing/dynamodb-visitor-count.png)
+
+This evidence is from a live AWS check, not an automated test. `POST /visits` changes the real counter. The counter tracks recorded actions, not unique visitors.
 
 ## Dependency audit
 
