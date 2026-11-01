@@ -53,12 +53,11 @@ export function Hero() {
   return (
     <section id="top" className="hero" aria-labelledby="hero-title">
       <Monogram />
-      <p className="hero-eyebrow">Cloud Support · DevOps · Cloud Engineering</p>
       <h1 className="hero-name" id="hero-title" translate="no">
         <span className="hero-name-line">Jerome</span>{" "}
         <span className="hero-name-line">Christian Ibon</span>
       </h1>
-      <span className="hero-divider" aria-hidden="true" />
+      <p className="hero-role">Cloud Support · DevOps · Cloud Engineering</p>
       <p className="hero-statement">
         Computer Engineering graduate building cloud infrastructure, automated
         delivery pipelines, Kubernetes environments, and observable systems.
