@@ -47,6 +47,7 @@ data "aws_cloudfront_cache_policy" "website" {
 }
 
 resource "aws_cloudfront_distribution" "website" {
+  aliases             = ["jeysibn.dev", "www.jeysibn.dev"]
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
@@ -76,7 +77,9 @@ resource "aws_cloudfront_distribution" "website" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = "arn:aws:acm:us-east-1:665514296439:certificate/83269c59-3920-44ea-9035-567ff8088000"
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
 }
 
@@ -180,7 +183,11 @@ resource "aws_apigatewayv2_api" "visitor" {
     allow_credentials = false
     allow_headers     = ["content-type"]
     allow_methods     = ["GET", "POST"]
-    allow_origins     = ["https://${aws_cloudfront_distribution.website.domain_name}"]
+    allow_origins = [
+      "https://${aws_cloudfront_distribution.website.domain_name}",
+      "https://jeysibn.dev",
+      "https://www.jeysibn.dev"
+    ]
   }
 }
 
