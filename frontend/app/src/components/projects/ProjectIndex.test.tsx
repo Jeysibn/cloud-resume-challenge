@@ -24,8 +24,8 @@ describe("project index", () => {
       list.classList.contains("project-list"),
     );
     expect(within(featured).getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual([
-      "Homelab GitOps Environment",
       "AWS Cloud Resume Challenge",
+      "Homelab GitOps Environment",
     ]);
     expect(within(building).getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual([
       "MoniKey",
