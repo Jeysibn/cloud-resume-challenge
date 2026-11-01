@@ -51,4 +51,4 @@ Pull requests to `main` run TypeScript checks, lint, unit tests, and a productio
 
 ## Version 1 history
 
-V1 was manually provisioned in an older AWS project, which has since been closed. Its service choices informed the V2 design, but its AWS resources are not live and its Terraform state must not be reused. Azure details in the portfolio refer to a separate historical project.
+V1 was manually provisioned in an older AWS project, which has since been closed. Its service choices informed the V2 design, but its AWS resources are not live and its Terraform state must not be reused. The older GitHub Pages/Azure portfolio is a separate historical project, not the current live AWS case study.
