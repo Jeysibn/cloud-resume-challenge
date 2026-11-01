@@ -5,7 +5,7 @@ import { Arrow } from "../Arrow";
  * Presentation only: which canonical projects get the larger treatment. The
  * canonical `projects` array keeps all four records and slugs.
  */
-const featuredSlugs = ["homelab-gitops", "cloud-portfolio"];
+const featuredSlugs = ["homelab-gitops", "aws-cloud-resume-challenge"];
 
 function ProjectCard({
   project,
