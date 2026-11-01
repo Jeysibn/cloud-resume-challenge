@@ -2,7 +2,7 @@
 
 ## Live system: Version 2
 
-The live portfolio runs in AWS account `665514296439`, region `ap-southeast-2`. The website is [https://d1ezqc8d2heo4m.cloudfront.net/](https://d1ezqc8d2heo4m.cloudfront.net/).
+The live portfolio runs in AWS account `665514296439`, region `ap-southeast-2`. The public portfolio is [https://jeysibn.dev](https://jeysibn.dev). CloudFront serves it using the custom domain; the underlying distribution endpoint is [d1ezqc8d2heo4m.cloudfront.net](https://d1ezqc8d2heo4m.cloudfront.net/).
 
 ```mermaid
 flowchart LR
@@ -14,7 +14,7 @@ flowchart LR
     DB[(DynamoDB counter)]
     GH[GitHub Actions on main]
 
-    B -->|Website files| CF
+    B -->|https://jeysibn.dev| CF
     CF -->|Private access through OAC| S3
     B -->|GET or POST /visits| API
     API --> L

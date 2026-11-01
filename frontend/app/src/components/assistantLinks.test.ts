@@ -5,22 +5,22 @@ describe("assistant link resolution", () => {
   it("maps same-site section sources to current-page hash links", () => {
     expect(
       resolveAssistantLink(
-        { id: "professional-experience", label: "Professional experience", url: "https://d1ezqc8d2heo4m.cloudfront.net/#experience" },
-        "https://d1ezqc8d2heo4m.cloudfront.net/",
+        { id: "professional-experience", label: "Professional experience", url: "https://jeysibn.dev/#experience" },
+        "https://jeysibn.dev/",
       ),
     ).toEqual({ type: "section", label: "Professional experience", target: "experience" });
 
     expect(
       resolveAssistantLink(
-        { id: "certifications", label: "Certifications", url: "https://d1ezqc8d2heo4m.cloudfront.net/#credentials-title" },
+        { id: "certifications", label: "Certifications", url: "https://jeysibn.dev/#credentials-title" },
         "http://localhost:5173/",
       ),
     ).toEqual({ type: "section", label: "Certifications", target: "credentials" });
 
     expect(
       resolveAssistantLink(
-        { id: "profile", label: "Portfolio profile", url: "https://d1ezqc8d2heo4m.cloudfront.net/" },
-        "https://d1ezqc8d2heo4m.cloudfront.net/",
+        { id: "profile", label: "Portfolio profile", url: "https://jeysibn.dev/" },
+        "https://jeysibn.dev/",
       ),
     ).toEqual({ type: "section", label: "Portfolio profile", target: "top" });
   });
@@ -28,8 +28,8 @@ describe("assistant link resolution", () => {
   it("sends links to the removed #about section to the top of the page", () => {
     expect(
       resolveAssistantLink(
-        { id: "approach", label: "Approach", url: "https://d1ezqc8d2heo4m.cloudfront.net/#about" },
-        "https://d1ezqc8d2heo4m.cloudfront.net/",
+        { id: "approach", label: "Approach", url: "https://jeysibn.dev/#about" },
+        "https://jeysibn.dev/",
       ),
     ).toEqual({ type: "section", label: "Approach", target: "top" });
   });
@@ -37,8 +37,8 @@ describe("assistant link resolution", () => {
   it("sends links to the removed #resume section to Contact", () => {
     expect(
       resolveAssistantLink(
-        { id: "resume", label: "Resume", url: "https://d1ezqc8d2heo4m.cloudfront.net/#resume" },
-        "https://d1ezqc8d2heo4m.cloudfront.net/",
+        { id: "resume", label: "Resume", url: "https://jeysibn.dev/#resume" },
+        "https://jeysibn.dev/",
       ),
     ).toEqual({ type: "section", label: "Resume", target: "contact" });
   });
@@ -47,7 +47,7 @@ describe("assistant link resolution", () => {
     expect(
       resolveAssistantLink(
         { id: "project-monikey", label: "Untrusted label", url: "https://example.com/wrong" },
-        "https://d1ezqc8d2heo4m.cloudfront.net/",
+        "https://jeysibn.dev/",
       ),
     ).toEqual({
       type: "project",
@@ -56,7 +56,7 @@ describe("assistant link resolution", () => {
       repositoryUrl: "https://github.com/Jeysibn/monikey",
     });
 
-    expect(projectNavigationUrl("monikey", "https://d1ezqc8d2heo4m.cloudfront.net/#experience"))
+    expect(projectNavigationUrl("monikey", "https://jeysibn.dev/#experience"))
       .toBe("/?project=monikey");
   });
 
@@ -64,7 +64,7 @@ describe("assistant link resolution", () => {
     expect(
       resolveAssistantLink(
         { id: "repository-homelab", label: "Homelab repository", url: "https://github.com/Jeysibn/homelab-gitops" },
-        "https://d1ezqc8d2heo4m.cloudfront.net/",
+        "https://jeysibn.dev/",
       ),
     ).toEqual({
       type: "external",
@@ -75,14 +75,14 @@ describe("assistant link resolution", () => {
     expect(
       resolveAssistantLink(
         { id: "bad", label: "Bad link", url: "not a url" },
-        "https://d1ezqc8d2heo4m.cloudfront.net/",
+        "https://jeysibn.dev/",
       ),
     ).toBeNull();
 
     expect(
       resolveAssistantLink(
-        { id: "unknown", label: "Unknown section", url: "https://d1ezqc8d2heo4m.cloudfront.net/#not-a-section" },
-        "https://d1ezqc8d2heo4m.cloudfront.net/",
+        { id: "unknown", label: "Unknown section", url: "https://jeysibn.dev/#not-a-section" },
+        "https://jeysibn.dev/",
       ),
     ).toBeNull();
   });

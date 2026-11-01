@@ -1,6 +1,6 @@
 # AWS Cloud Resume Challenge
 
-This repository contains a React portfolio and the AWS services behind its visitor counter. **Version 2 is live** at [https://d1ezqc8d2heo4m.cloudfront.net/](https://d1ezqc8d2heo4m.cloudfront.net/). It runs in AWS account `665514296439`, in the Sydney region (`ap-southeast-2`), and Terraform manages its infrastructure.
+This repository contains a React portfolio and the AWS services behind its visitor counter. **Version 2 is live** at [https://jeysibn.dev](https://jeysibn.dev). CloudFront delivers the site behind this custom domain; its distribution endpoint is [d1ezqc8d2heo4m.cloudfront.net](https://d1ezqc8d2heo4m.cloudfront.net/). It runs in AWS account `665514296439`, in the Sydney region (`ap-southeast-2`), and Terraform manages its infrastructure.
 
 Version 1 was a manually built deployment in an older AWS project. That project is closed. V1 is part of the project history; it is not running the live site.
 
@@ -16,7 +16,7 @@ flowchart LR
     Counter[(DynamoDB counter)]
     Actions[GitHub Actions on main]
 
-    Browser -->|Loads website| CloudFront
+    Browser -->|https://jeysibn.dev| CloudFront
     CloudFront -->|Reads files through OAC| Website
     Browser -->|GET or POST /visits| API
     API --> Lambda
@@ -31,7 +31,8 @@ Terraform creates and configures the V2 AWS resources. The DynamoDB table is man
 
 | Part | Live V2 value |
 | --- | --- |
-| Website | [d1ezqc8d2heo4m.cloudfront.net](https://d1ezqc8d2heo4m.cloudfront.net/) |
+| Main portfolio link | [jeysibn.dev](https://jeysibn.dev) |
+| CloudFront distribution endpoint | [d1ezqc8d2heo4m.cloudfront.net](https://d1ezqc8d2heo4m.cloudfront.net/) |
 | AWS account / region | `665514296439` / `ap-southeast-2` |
 | Website bucket | `cloud-resume-v2-website-665514296439-ap-southeast-2` |
 | Visitor API base URL | `https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com` |
