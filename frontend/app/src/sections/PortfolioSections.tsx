@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   career,
   certifications,
+  currentLearning,
   education,
   experience,
   profile,
@@ -13,6 +14,8 @@ import type { Project } from "../portfolio";
 import { SkillGroups } from "../components/capabilities/SkillGroups";
 import type { SkillSelection } from "../components/capabilities/SkillGroups";
 import { Arrow } from "../components/Arrow";
+import { isCurrent, periodLength } from "../components/experience/duration";
+import { SKILL_SPRITE, issuerMarks } from "../components/capabilities/skillMarks";
 import { ProjectIndex } from "../components/projects/ProjectIndex";
 import { Magnet } from "../components/hero/Magnet";
 import { Monogram } from "../components/hero/Monogram";
@@ -27,8 +30,8 @@ function Section({
 }: {
   id: string;
   title: string;
-  eyebrow: string;
-  number: string;
+  eyebrow?: string;
+  number?: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -39,7 +42,7 @@ function Section({
       aria-labelledby={`${id}-title`}
     >
       <header className="section-heading" data-number={number} data-reveal>
-        <p className="section-eyebrow">{eyebrow}</p>
+        {eyebrow && <p className="section-eyebrow">{eyebrow}</p>}
         <h2 id={`${id}-title`}>{title}</h2>
       </header>
       {children}
@@ -108,49 +111,69 @@ export function Projects({ onOpen }: { onOpen: (p: Project) => void }) {
   return (
     <Section
       id="projects"
-      title="Work"
-      eyebrow="Projects"
+      title="Selected work"
       number="01"
       className="projects-section"
     >
-      <p className="projects-intro">
-        Selected engineering work, presented as working systems rather than isolated screenshots.
-      </p>
       <ProjectIndex projects={projects} onInspect={onOpen} />
     </Section>
   );
 }
 
+/** Bold the figures in a highlight ("80+", "640 hours") so the evidence scans. */
+function emphasiseFigures(text: string) {
+  const parts = text.split(/(\b\d[\d,]*\+?(?:\s(?:hours|cases))?)/);
+  return parts.map((part, index) => (index % 2 ? <strong key={index}>{part}</strong> : part));
+}
+
 export function Experience() {
   return (
     <Section id="experience" title="Experience" eyebrow="Career" number="02">
-      <div className="experience-list">
+      <ol className="experience-list">
         {experience.map((item) => {
-          const [, title, scope] = item.role.match(/^(.*?)\s*(\(.*\))$/) ?? [null, item.role, ""];
+          const [, title, scope] = item.role.match(/^(.*?)\s*\((.*)\)$/) ?? [null, item.role, ""];
+          const current = isCurrent(item.period);
+          const length = periodLength(item.period);
           return (
-          <article key={item.role} data-reveal>
-            <aside>
-              <time>{item.period}</time>
-            </aside>
-            <div>
-              <h3>
-                {title}
-                {scope ? <> <span className="role-scope">{scope}</span></> : null}
-              </h3>
-              <p className="org">
-                {item.organization} · {item.location}
-              </p>
-              <p>{item.summary}</p>
-              <ul>
-                {item.highlights.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
-            </div>
-          </article>
+            <li key={item.role} className={current ? "is-current" : undefined}>
+              <article data-reveal aria-labelledby={`role-${item.organization.replace(/\W+/g, "-")}`}>
+                <aside>
+                  <time>{item.period}</time>
+                  <p className="experience-length">
+                    {current ? <span className="experience-now">Current</span> : null}
+                    {length ? <span>{length}</span> : null}
+                  </p>
+                </aside>
+                <div className="experience-body">
+                  <span className="experience-node" aria-hidden="true" />
+                  <h3
+                    id={`role-${item.organization.replace(/\W+/g, "-")}`}
+                    // The scope shows as a tag; the label keeps the original wording.
+                    aria-label={scope ? item.role : undefined}
+                  >
+                    {title}
+                    {scope ? (
+                      <>
+                        {" "}
+                        <span className="role-scope">{scope}</span>
+                      </>
+                    ) : null}
+                  </h3>
+                  <p className="org">
+                    {item.organization} · {item.location}
+                  </p>
+                  <p className="experience-summary">{item.summary}</p>
+                  <ul>
+                    {item.highlights.map((x) => (
+                      <li key={x}>{emphasiseFigures(x)}</li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+            </li>
           );
         })}
-      </div>
+      </ol>
     </Section>
   );
 }
@@ -163,8 +186,8 @@ export function Skills({
   return (
     <Section id="skills" title="Toolkit" eyebrow="Skills" number="03" className="skills-section">
       <p className="skills-copy">
-        Skills grouped by domain. Select any skill to see how it is used in
-        practice.
+        Read the stack from the bottom up, from foundations to delivery; the
+        side pillars run across every layer. Select any skill to see how I use it.
       </p>
       <SkillGroups onOpen={onOpen} />
     </Section>
@@ -181,37 +204,70 @@ export function Credentials() {
       className="credentials-section"
     >
       <div className="credential-layout">
-        <article>
-          <h3>{education.degree}</h3>
-          <p>
-            {education.school} · {education.location}
-          </p>
-          <time>{education.period}</time>
-          <p className="thesis">Thesis — {education.thesis}</p>
+        <article className="credential-education" aria-labelledby="education-title">
+          <p className="credential-kicker">Education</p>
+          <h3 id="education-title">{education.degree}</h3>
+          <dl className="credential-facts">
+            <div>
+              <dt>School</dt>
+              <dd>
+                {education.school} · {education.location}
+              </dd>
+            </div>
+            <div>
+              <dt>Period</dt>
+              <dd>{education.period}</dd>
+            </div>
+            <div>
+              <dt>Thesis</dt>
+              <dd>{education.thesis}</dd>
+            </div>
+          </dl>
         </article>
-        <ol>
-          {certifications.map((certification) => (
-            <li key={certification.name}>
-              <div>
-                {certification.name}
-                <small className="credential-meta">
-                  {certification.issuer ? `${certification.issuer} · ` : null}
-                  <span
-                    className={
-                      certification.status === "in-progress"
-                        ? "credential-in-progress"
-                        : undefined
-                    }
-                  >
-                    {certification.status === "in-progress"
-                      ? "In progress"
-                      : "Earned"}
-                  </span>
-                </small>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <div className="credential-side">
+          <section aria-labelledby="certifications-title">
+            <h3 className="credential-kicker" id="certifications-title">
+              Certifications
+            </h3>
+            <ol className="cert-list">
+              {certifications.map((certification) => {
+                const inProgress = certification.status === "in-progress";
+                const logo = certification.issuer ? issuerMarks[certification.issuer] : undefined;
+                return (
+                  <li key={certification.name} className={inProgress ? "cert is-in-progress" : "cert"}>
+                    <span className="cert-logo" aria-hidden="true">
+                      {logo ? (
+                        <svg focusable="false">
+                          <use href={`${SKILL_SPRITE}#${logo}`} />
+                        </svg>
+                      ) : null}
+                    </span>
+                    <div className="cert-body">
+                      <p className="cert-name">{certification.name}</p>
+                      <p className="credential-meta">
+                        {certification.issuer ? `${certification.issuer} · ` : null}
+                        <span className="cert-status">{inProgress ? "In progress" : "Earned"}</span>
+                      </p>
+                    </div>
+                    <span className="cert-badge" aria-hidden="true" />
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+          {currentLearning.length > 0 && (
+            <section className="credential-learning" aria-labelledby="learning-title">
+              <h3 className="credential-kicker" id="learning-title">
+                Currently learning
+              </h3>
+              <ul>
+                {currentLearning.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
       </div>
     </Section>
   );
@@ -238,6 +294,62 @@ function copyTextFallback(value: string) {
   }
   document.body.removeChild(textArea);
   return copied;
+}
+
+const MANILA_TIME = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Manila",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+/** Current time in the Philippines, refreshed each minute (no animation frames). */
+function useManilaTime() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    // Align to the next minute, then tick once a minute.
+    let interval: number | undefined;
+    const timeout = window.setTimeout(() => {
+      tick();
+      interval = window.setInterval(tick, 60_000);
+    }, 60_000 - (Date.now() % 60_000));
+    return () => {
+      window.clearTimeout(timeout);
+      if (interval !== undefined) window.clearInterval(interval);
+    };
+  }, []);
+  return now;
+}
+
+function ContactCard() {
+  const now = useManilaTime();
+  return (
+    <aside className="contact-card" aria-label="Location and local time">
+      <dl>
+        <div>
+          <dt>Based in</dt>
+          <dd>{profile.location}</dd>
+        </div>
+        <div>
+          <dt>Local time</dt>
+          <dd>
+            <time dateTime={now.toISOString()}>{MANILA_TIME.format(now)}</time>{" "}
+            <span className="contact-zone">PHT · UTC+8</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Open to</dt>
+          <dd>
+            <ul className="contact-roles">
+              {career.target_roles.map((role) => (
+                <li key={role}>{role}</li>
+              ))}
+            </ul>
+          </dd>
+        </div>
+      </dl>
+    </aside>
+  );
 }
 
 export function Contact() {
@@ -291,7 +403,12 @@ export function Contact() {
 
   return (
     <Section id="contact" title="Contact" eyebrow="Get in touch" number="05" className="contact-section">
+      <div className="contact-layout">
       <div className="contact-block">
+        <p className="contact-lead">
+          Have a cloud support, DevOps or cloud engineering role in mind? I would
+          like to hear about it.
+        </p>
         <a
           href={`mailto:${profile.email}`}
           className="contact-email"
@@ -300,7 +417,7 @@ export function Contact() {
           {profile.email}
         </a>
         <p className="contact-availability">
-          <span className="status-light online" aria-hidden="true" />
+          <span className="availability-dot" aria-hidden="true" />
           <span>Open to opportunities. {career.availability}</span>
         </p>
         <div className="contact-actions">
@@ -355,6 +472,8 @@ export function Contact() {
             </a>
           </li>
         </ul>
+      </div>
+      <ContactCard />
       </div>
     </Section>
   );

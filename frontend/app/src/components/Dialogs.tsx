@@ -53,7 +53,7 @@ export function ProjectDialog({
   return (
     <dialog
       ref={ref}
-      className="inspection-dialog"
+      className="inspection-dialog project-dialog"
       aria-labelledby="project-dialog-title"
       aria-describedby="project-dialog-summary"
       onClick={(e) => {
@@ -61,96 +61,73 @@ export function ProjectDialog({
       }}
     >
       {project && (
-        <article>
-          <header>
-            <p>{project.category}</p>
-            <h2 id="project-dialog-title">{project.title}</h2>
-            <p className="dialog-status">{project.status}</p>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close system inspection"
-              data-dialog-close
-            >
-              Close
+        <>
+          <div className="project-dialog-toolbar">
+            <span>Project details</span>
+            <button type="button" onClick={onClose} aria-label="Close project details" data-dialog-close>
+              Close <span aria-hidden="true">×</span>
             </button>
-          </header>
-          <p className="dialog-lead" id="project-dialog-summary">
-            {project.details.summary}
-          </p>
-          <section className="dialog-architecture" aria-labelledby="architecture-title">
-            <div className="dialog-section-heading">
-              <h3 id="architecture-title">System architecture</h3>
-              <p>Repository-derived · container-level views</p>
-            </div>
-            <ArchitectureFlow flows={project.details.architectureFlows} />
-            {project.architecture.diagrams.map((diagram) => (
-              <figure className="architecture-figure" key={diagram.id}>
-                <figcaption>
-                  <h4>{diagram.title}</h4>
-                  <p>{diagram.description}</p>
-                </figcaption>
-                <div
-                  className="architecture-diagram-frame"
-                  tabIndex={0}
-                  role="region"
-                  aria-label={`${diagram.title} diagram; scroll horizontally on smaller screens`}
-                >
-                  <img src={diagram.svg} alt="" aria-hidden="true" />
-                </div>
-                <details className="architecture-summary">
-                  <summary>Read architecture as text</summary>
-                  <ul>
-                    {diagram.summary.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </details>
-              </figure>
-            ))}
-          </section>
-          <div className="dialog-grid">
-            <section>
-              <h3>Why it exists</h3>
+          </div>
+          <article>
+            <header>
+              <p>{project.category}</p>
+              <h2 id="project-dialog-title">{project.title}</h2>
+              <p className="dialog-status">{project.status}</p>
+            </header>
+            <section className="project-overview" aria-labelledby="project-overview-title">
+              <h3 id="project-overview-title">Overview</h3>
+              <p className="dialog-lead" id="project-dialog-summary">{project.preview.summary}</p>
               <p>{project.details.purpose}</p>
             </section>
-            <section>
-              <h3>Operating outcomes</h3>
+            <section className="project-results" aria-labelledby="project-results-title">
+              <h3 id="project-results-title">Results</h3>
               <ul>
-                {project.details.outcomes.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
+                {project.details.outcomes.map((outcome) => <li key={outcome}>{outcome}</li>)}
               </ul>
             </section>
-            <section>
-              <h3>Engineering highlights</h3>
-              <ul>
-                {project.details.highlights.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
+            <section className="dialog-architecture" aria-labelledby="architecture-title">
+              <div className="dialog-section-heading">
+                <h3 id="architecture-title">Architecture</h3>
+              </div>
+              <ArchitectureFlow flows={project.details.architectureFlows} />
+              {project.architecture.diagrams.map((diagram) => (
+                <details className="architecture-detail" key={diagram.id}>
+                  <summary>{diagram.title}</summary>
+                  <figure className="architecture-figure">
+                    <figcaption><p>{diagram.description}</p></figcaption>
+                    <div
+                      className="architecture-diagram-frame"
+                      tabIndex={0}
+                      role="region"
+                      aria-label={`${diagram.title} diagram; scroll horizontally on smaller screens`}
+                    >
+                      <img src={diagram.svg} alt="" aria-hidden="true" loading="lazy" />
+                    </div>
+                    <details className="architecture-summary">
+                      <summary>Read architecture as text</summary>
+                      <ul>{diagram.summary.map((item) => <li key={item}>{item}</li>)}</ul>
+                    </details>
+                  </figure>
+                </details>
+              ))}
             </section>
-            <section>
-              <h3>Technology</h3>
+            <section className="project-implementation" aria-labelledby="project-implementation-title">
+              <h3 id="project-implementation-title">Implementation</h3>
+              <p>{project.details.summary}</p>
+              <ul>{project.details.highlights.map((item) => <li key={item}>{item}</li>)}</ul>
+              <h4>Full toolkit</h4>
               <p>{project.details.technologies.join(" · ")}</p>
             </section>
-          </div>
-          <div className="dialog-actions">
-            <a
-              className="action-primary"
-              href={project.repositoryUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              View repository ↗
-            </a>
-            {project.liveUrl ? (
-              <a href={project.liveUrl} target="_blank" rel="noreferrer">
-                Open live system ↗
+            <div className="dialog-actions">
+              <a className="action-primary" href={project.repositoryUrl} target="_blank" rel="noopener noreferrer">
+                GitHub repository ↗
               </a>
-            ) : null}
-          </div>
-        </article>
+              {project.liveUrl && (
+                <a href={project.liveUrl} target="_blank" rel="noopener noreferrer">Open live site ↗</a>
+              )}
+            </div>
+          </article>
+        </>
       )}
     </dialog>
   );

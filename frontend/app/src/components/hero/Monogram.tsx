@@ -1,7 +1,8 @@
 import { useId } from "react";
 
 /*
- * Sculptural JI monogram for the hero. Decorative only: the name is in the H1.
+ * Sculptural JI monogram, used large in the hero and small as the header mark.
+ * Decorative only: the name is in the H1 and the header link has its own label.
  *
  * Built as one inline SVG so it stays crisp and cheap: an arched metal window
  * frame with a faint glass opening, a JI ligature whose J and I hang from a shared lintel
@@ -18,12 +19,12 @@ const LETTERS =
 // Centre the ligature in the opening and give it more presence.
 const LETTER_PLACEMENT = "translate(100 134) scale(1.12) translate(-99 -148)";
 
-export function Monogram() {
+export function Monogram({ className = "" }: { className?: string }) {
   const id = useId().replace(/:/g, "");
   const ref = (name: string) => `url(#${id}-${name})`;
 
   return (
-    <div className="monogram" aria-hidden="true">
+    <div className={`monogram ${className}`.trim()} aria-hidden="true">
       <svg className="monogram-art" viewBox="0 0 200 220" focusable="false">
         <defs>
           <linearGradient id={`${id}-rim`} x1="0" y1="0" x2="1" y2="1">
@@ -79,5 +80,25 @@ export function Monogram() {
         <path className="monogram-rim-edge" d={OUTER} />
       </svg>
     </div>
+  );
+}
+
+/**
+ * Just the JI ligature, without the arch: the header mark (and the favicon's
+ * shape). Same letter metal as the hero, so it follows the theme.
+ */
+export function JiMark({ className = "" }: { className?: string }) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <svg className={`ji-mark ${className}`.trim()} viewBox="58 92 82 112" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id={`${id}-metal`} x1="0" y1="0" x2="0.35" y2="1">
+          <stop offset="0" className="mono-stop-metal-hi" />
+          <stop offset="0.5" className="mono-stop-metal-mid" />
+          <stop offset="1" className="mono-stop-metal-lo" />
+        </linearGradient>
+      </defs>
+      <path d={LETTERS} fill={`url(#${id}-metal)`} />
+    </svg>
   );
 }

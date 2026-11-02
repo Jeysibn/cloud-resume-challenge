@@ -86,6 +86,7 @@ export const experience = canonicalContent.experience as ExperienceItem[];
 export const projects = canonicalContent.projects as Project[];
 export const certifications = canonicalContent.certifications as Certification[];
 export const education = canonicalContent.education;
+export const currentLearning = canonicalContent.current_learning as string[];
 export const profile = canonicalContent.profile;
 export const career = canonicalContent.career;
 export const professionalSummary = canonicalContent.career.professional_summary;

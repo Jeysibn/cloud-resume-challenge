@@ -1,7 +1,8 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Contact, Credentials, Projects } from "./sections/PortfolioSections";
+import { career, certifications, currentLearning, experience } from "./portfolio";
+import { Contact, Credentials, Experience, Projects } from "./sections/PortfolioSections";
 
 afterEach(cleanup);
 
@@ -67,11 +68,64 @@ describe("Credential metadata", () => {
   });
 });
 
+describe("Credentials layout", () => {
+  it("shows each certification with its issuer logo and a distinct in-progress state", () => {
+    render(<Credentials />);
+
+    const items = Array.from(document.querySelectorAll(".cert"));
+    expect(items).toHaveLength(certifications.length);
+    for (const [index, certification] of certifications.entries()) {
+      const item = items[index];
+      expect(item).toHaveTextContent(certification.name);
+      expect(item.querySelector(".cert-logo use")?.getAttribute("href")).toMatch(/skill-icons\.svg#/);
+      expect(item.classList.contains("is-in-progress")).toBe(certification.status === "in-progress");
+    }
+  });
+
+  it("lists what is currently being learned from the canonical content", () => {
+    render(<Credentials />);
+
+    const learning = screen.getByRole("region", { name: "Currently learning" });
+    expect(within(learning).getAllByRole("listitem").map((item) => item.textContent)).toEqual(currentLearning);
+  });
+});
+
+describe("Contact card", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("shows the local time in Manila and the target roles", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-02T12:00:00Z"));
+    render(<Contact />);
+
+    const card = screen.getByRole("complementary", { name: "Location and local time" });
+    expect(card).toHaveTextContent("8:00 PM");
+    expect(card).toHaveTextContent("PHT · UTC+8");
+    for (const role of career.target_roles) expect(card).toHaveTextContent(role);
+  });
+});
+
+describe("Experience timeline", () => {
+  it("marks only the current role and bolds the figures in highlights", () => {
+    render(<Experience />);
+
+    const roles = document.querySelectorAll(".experience-list > li");
+    expect(roles).toHaveLength(experience.length);
+    expect(document.querySelectorAll(".experience-list > li.is-current")).toHaveLength(
+      experience.filter((item) => /present$/i.test(item.period)).length,
+    );
+    expect(screen.getByText("Current")).toBeInTheDocument();
+    const figures = Array.from(document.querySelectorAll(".experience-body strong"), (node) => node.textContent);
+    expect(figures).toEqual(expect.arrayContaining(["80+", "640 hours"]));
+    expect(screen.getByRole("heading", { level: 3, name: "DevOps Platform Engineer (technical support scope)" })).toBeInTheDocument();
+  });
+});
+
 describe("Section headings", () => {
   it("keeps lifecycle stages out of content headings and removed signal markup out of the page", () => {
     render(<Projects onOpen={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: "Work" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Selected work" })).toBeInTheDocument();
     expect(document.querySelectorAll(".chapter-signal")).toHaveLength(0);
     expect(document.querySelectorAll("[data-signal-stage]")).toHaveLength(0);
   });

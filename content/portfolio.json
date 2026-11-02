@@ -214,8 +214,8 @@
       "repositoryUrl": "https://github.com/Jeysibn/cloud-resume-challenge",
       "liveUrl": "https://jeysibn.dev/",
       "preview": {
-        "summary": "An AWS-hosted React and TypeScript portfolio served through CloudFront and private S3, with a serverless visitor counter using API Gateway, Python Lambda, and DynamoDB.",
-        "primaryOutcome": "Rebuilt the console-based V1 as Terraform-managed V2; GitHub Actions tests changes and uses OIDC for reviewed frontend releases.",
+        "summary": "This site on AWS: React served from CloudFront and private S3, with a Lambda and DynamoDB visitor counter.",
+        "primaryOutcome": "Rebuilt the console-built V1 in Terraform; GitHub Actions tests every change and deploys through OIDC.",
         "flow": {
           "label": "CloudFront → API Gateway → Lambda → DynamoDB",
           "nodes": [
@@ -228,10 +228,10 @@
         },
         "technologies": [
           "AWS",
-          "React",
-          "TypeScript",
           "Terraform",
-          "GitHub Actions"
+          "GitHub Actions",
+          "React",
+          "TypeScript"
         ]
       },
       "details": {
@@ -386,8 +386,8 @@
       "statusLabel": "ACTIVE LAB",
       "repositoryUrl": "https://github.com/Jeysibn/homelab-gitops",
       "preview": {
-        "summary": "A single-node k3s environment on a Terraform-provisioned Proxmox VM, with Calico bootstrap, Argo CD convergence, LAN ingress, storage, DNS, and observability.",
-        "primaryOutcome": "Bootstrap gates Argo CD on working Calico and cluster-network acceptance checks before App-of-Apps reconciliation from main.",
+        "summary": "A single-node Kubernetes (k3s) cluster on a Terraform-provisioned Proxmox VM, kept in sync from Git by Argo CD.",
+        "primaryOutcome": "Bootstrap verifies Calico networking before Argo CD may reconcile workloads from main.",
         "flow": {
           "label": "Terraform → bootstrap → Argo CD → workloads",
           "nodes": [
@@ -400,10 +400,10 @@
         },
         "technologies": [
           "Terraform",
-          "Proxmox",
           "k3s",
-          "Calico",
-          "Argo CD"
+          "Argo CD",
+          "Proxmox",
+          "Calico"
         ]
       },
       "details": {
@@ -545,8 +545,8 @@
       "statusLabel": "PRIVATE DEPLOYMENT",
       "repositoryUrl": "https://github.com/Jeysibn/monikey",
       "preview": {
-        "summary": "A personal finance tracker for cash, bank, e-wallet and credit-card accounts: a React frontend, a FastAPI API and PostgreSQL, deployed to a private homelab through GitHub Actions, GHCR and Argo CD.",
-        "primaryOutcome": "A card payment reduces card debt without being counted as a second expense, and every balance and monthly total is calculated in SQL from exact NUMERIC(12,2) amounts.",
+        "summary": "A finance tracker for cash, bank, e-wallet and card accounts, built with React, FastAPI and PostgreSQL in my homelab.",
+        "primaryOutcome": "Card payments reduce debt without counting as a second expense; balances are computed in SQL with exact decimals.",
         "flow": {
           "label": "Traefik → nginx / React → FastAPI → PostgreSQL",
           "nodes": [
@@ -559,9 +559,9 @@
         },
         "technologies": [
           "React",
-          "TypeScript",
           "FastAPI",
           "PostgreSQL",
+          "TypeScript",
           "Argo CD"
         ]
       },
@@ -724,8 +724,8 @@
       "statusLabel": "ACTIVE DEVELOPMENT",
       "repositoryUrl": "https://github.com/Jeysibn/noc-report",
       "preview": {
-        "summary": "An evolving NOC report builder that turns shift-scoped incidents and frozen evidence into validated analysis and deterministic web/DOCX reports.",
-        "primaryOutcome": "Claude supplies narrative reasoning; application-owned composition derives mandatory evidence coverage and report order from a frozen ReportSnapshot.",
+        "summary": "A report builder that turns a NOC shift's incidents and evidence into validated web and DOCX reports.",
+        "primaryOutcome": "Report facts and order come from frozen evidence; Claude writes only the narrative analysis.",
         "flow": {
           "label": "frozen evidence → queue → analysis → composition",
           "nodes": [
@@ -737,11 +737,11 @@
           "accessible": "Frozen evidence enters the job and RabbitMQ path, the bridge and sandbox run validated analysis, and application-owned composition creates the ReportDocument."
         },
         "technologies": [
-          "React",
           "FastAPI",
+          "RabbitMQ",
           "PostgreSQL",
-          "MinIO",
-          "RabbitMQ"
+          "React",
+          "MinIO"
         ]
       },
       "details": {
