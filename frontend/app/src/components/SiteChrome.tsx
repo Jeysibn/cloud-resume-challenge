@@ -6,13 +6,14 @@ import { VisitorCounter } from "./VisitorCounter";
 import { JiMark } from "./hero/Monogram";
 
 /**
- * Header destinations group the page anchors; every section keeps its own
- * anchor ID. A destination is current while any of its sections is active.
+ * One header destination per numbered section (01-05), in page order. A
+ * destination is current while any of its sections is active.
  */
 const primaryNav = [
   { label: "Work", ids: ["projects"] },
   { label: "Experience", ids: ["experience"] },
-  { label: "Toolkit", ids: ["skills", "credentials"] },
+  { label: "Toolkit", ids: ["skills"] },
+  { label: "Credentials", ids: ["credentials"] },
   { label: "Contact", ids: ["contact"] },
 ] as const;
 
