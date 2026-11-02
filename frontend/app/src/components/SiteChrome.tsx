@@ -85,23 +85,8 @@ export function SiteHeader({
             {item.label}
           </a>
         ))}
-        <a
-          className="nav-resume"
-          href="./resume.pdf"
-          download="Jerome-Ibon-Resume.pdf"
-          onClick={() => setOpen(false)}
-        >
-          Resume
-        </a>
       </nav>
       <div className="header-tools">
-        <a
-          className="header-resume"
-          href="./resume.pdf"
-          download="Jerome-Ibon-Resume.pdf"
-        >
-          Resume
-        </a>
         <button
           className="theme-switch"
           type="button"

@@ -28,7 +28,7 @@ describe("home navigation", () => {
     expect(document.querySelector("#top")).toHaveClass("hero");
   });
 
-  it("exposes one destination per numbered section plus Resume with stable anchors", () => {
+  it("exposes one destination per numbered section with stable anchors", () => {
     render(<SiteHeader activeSection="" theme="light" onTheme={vi.fn()} />);
 
     const nav = screen.getByRole("navigation", { name: "Primary navigation" });
@@ -39,7 +39,6 @@ describe("home navigation", () => {
       ["Toolkit", "#skills"],
       ["Credentials", "#credentials"],
       ["Contact", "#contact"],
-      ["Resume", "./resume.pdf"],
     ]);
   });
 
