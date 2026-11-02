@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 
 import type { ThemePreference } from "./portfolio";
 
@@ -18,29 +19,64 @@ function getInitialTheme(): ThemePreference {
     : "light";
 }
 
+function applyTheme(theme: ThemePreference) {
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+  const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (themeColor) themeColor.content = theme === "dark" ? "#0a0a0a" : "#f2efe9";
+}
+
+/** Viewport point the theme change spreads from (the switch's centre). */
+export type ThemeOrigin = { x: number; y: number };
+
 export function useTheme() {
   const [preference, setPreference] =
     useState<ThemePreference>(getInitialTheme);
   const effectiveTheme = preference;
 
   useEffect(() => {
-    document.documentElement.dataset.theme = effectiveTheme;
-    document.documentElement.style.colorScheme = effectiveTheme;
+    applyTheme(effectiveTheme);
     try {
       window.localStorage.setItem(THEME_STORAGE_KEY, preference);
     } catch {
       // The theme still applies for the current session when storage is blocked.
     }
-
-    const themeColor = document.querySelector<HTMLMetaElement>(
-      'meta[name="theme-color"]',
-    );
-    if (themeColor) {
-      themeColor.content = effectiveTheme === "dark" ? "#0a0a0a" : "#f2efe9";
-    }
   }, [effectiveTheme, preference]);
 
-  return { preference, effectiveTheme, setPreference };
+  /**
+   * Switches theme with a "water drop" reveal: the new theme spreads in a soft
+   * circle from `origin`. Uses the View Transitions API; without it, or with
+   * reduced motion, the theme changes instantly.
+   */
+  const switchTheme = useCallback((next: ThemePreference, origin?: ThemeOrigin) => {
+    const root = document.documentElement;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? true;
+    if (!origin || reduced || typeof document.startViewTransition !== "function") {
+      setPreference(next);
+      return;
+    }
+
+    // Radius that reaches the farthest viewport corner from the origin.
+    const radius = Math.hypot(
+      Math.max(origin.x, window.innerWidth - origin.x),
+      Math.max(origin.y, window.innerHeight - origin.y),
+    );
+    root.style.setProperty("--theme-x", `${origin.x}px`);
+    root.style.setProperty("--theme-y", `${origin.y}px`);
+    root.style.setProperty("--theme-r", `${Math.ceil(radius)}px`);
+    root.classList.add("theme-switching");
+
+    const transition = document.startViewTransition(() => {
+      flushSync(() => setPreference(next));
+      applyTheme(next);
+    });
+    transition.finished.finally(() => {
+      root.classList.remove("theme-switching");
+      for (const name of ["--theme-x", "--theme-y", "--theme-r"]) root.style.removeProperty(name);
+    });
+  }, []);
+
+  return { preference, effectiveTheme, setPreference, switchTheme };
 }
 
 export function useActiveSection(sectionIds: readonly string[]) {

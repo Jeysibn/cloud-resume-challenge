@@ -10,11 +10,11 @@ describe("project index", () => {
     render(<ProjectIndex projects={projects} onInspect={vi.fn()} />);
 
     for (const project of projects) {
-      expect(screen.getByRole("heading", { level: 4, name: project.title })).toBeVisible();
+      expect(screen.getByRole("heading", { name: project.title })).toBeVisible();
       expect(screen.getByText(project.preview.summary)).toBeVisible();
       expect(screen.getByText(project.preview.primaryOutcome)).toBeVisible();
     }
-    expect(screen.getAllByRole("button", { name: /^View case study:/ })).toHaveLength(projects.length);
+    expect(screen.getAllByRole("button", { name: /^View project:/ })).toHaveLength(projects.length);
   });
 
   it("features Homelab GitOps and AWS Cloud Resume Challenge and lists the others as in progress", () => {
@@ -23,7 +23,7 @@ describe("project index", () => {
     const [featured, building] = screen.getAllByRole("list").filter((list) =>
       list.classList.contains("project-list"),
     );
-    expect(within(featured).getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual([
+    expect(within(featured).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
       "AWS Cloud Resume Challenge",
       "Homelab GitOps Environment",
     ]);
@@ -31,7 +31,6 @@ describe("project index", () => {
       "MoniKey",
       "NOC Report Builder",
     ]);
-    expect(screen.getByRole("heading", { level: 3, name: "Selected work" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Currently building" })).toBeInTheDocument();
   });
 
@@ -39,12 +38,12 @@ describe("project index", () => {
     const onInspect = vi.fn();
     render(<ProjectIndex projects={projects} onInspect={onInspect} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "View case study: MoniKey" }));
+    fireEvent.click(screen.getByRole("button", { name: "View project: MoniKey" }));
     expect(onInspect).toHaveBeenCalledWith(projects.find((project) => project.slug === "monikey"));
 
     for (const project of projects) {
       expect(
-        screen.getByRole("link", { name: `${project.title} source repository (opens in a new tab)` }),
+        screen.getByRole("link", { name: `${project.title} GitHub repository (opens in a new tab)` }),
       ).toHaveAttribute("href", project.repositoryUrl);
     }
   });

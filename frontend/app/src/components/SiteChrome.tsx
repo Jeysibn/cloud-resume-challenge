@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import type { MouseEvent } from "react";
+import type { ThemeOrigin } from "../hooks";
 import type { ThemePreference } from "../portfolio";
 import { VisitorCounter } from "./VisitorCounter";
+import { JiMark } from "./hero/Monogram";
 
 /**
  * Header destinations group the page anchors; every section keeps its own
@@ -20,12 +23,20 @@ export function SiteHeader({
 }: {
   activeSection: string;
   theme: ThemePreference;
-  onTheme: (t: ThemePreference) => void;
+  onTheme: (t: ThemePreference, origin?: ThemeOrigin) => void;
 }) {
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const navToggleRef = useRef<HTMLButtonElement>(null);
-  const cycle = () => onTheme(theme === "dark" ? "light" : "dark");
+  const cycle = (event: MouseEvent<HTMLButtonElement>) => {
+    // The new theme spreads from the switch's glyph (or the button on small screens).
+    const glyph = event.currentTarget.querySelector("span") ?? event.currentTarget;
+    const rect = glyph.getBoundingClientRect();
+    onTheme(theme === "dark" ? "light" : "dark", {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    });
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -53,7 +64,7 @@ export function SiteHeader({
   return (
     <header className="site-header" ref={headerRef}>
       <a className="wordmark" href="#top" aria-label="Jerome Ibon, home">
-        <span>JI</span>
+        <JiMark className="wordmark-mark" />
         <small>JEYSIBN</small>
       </a>
       <nav

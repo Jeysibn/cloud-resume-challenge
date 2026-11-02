@@ -24,7 +24,7 @@ function projectFromLocation() {
 
 export default function App() {
   const activeSection = useActiveSection(navigation.map((item) => item.id));
-  const { preference, setPreference } = useTheme();
+  const { preference, switchTheme } = useTheme();
   useScrollReveal();
   useLegacyHashRedirect();
   const [project, setProject] = useState<Project | null>(projectFromLocation);
@@ -58,7 +58,7 @@ export default function App() {
       <SiteHeader
         activeSection={activeSection}
         theme={preference}
-        onTheme={setPreference}
+        onTheme={switchTheme}
       />
       <main id="main-content">
         <Hero />

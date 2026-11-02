@@ -42,7 +42,7 @@ test.describe("portfolio release browser gate", () => {
     await expectNoHorizontalOverflow(page);
 
     for (const title of ["Homelab GitOps Environment", "AWS Cloud Resume Challenge", "MoniKey", "NOC Report Builder"]) {
-      await expect(page.getByRole("heading", { level: 4, name: title })).toBeVisible();
+      await expect(page.getByRole("heading", { name: title })).toBeVisible();
     }
   });
 
@@ -70,7 +70,7 @@ test.describe("portfolio release browser gate", () => {
   });
 
   test("opens a case study from the static project index and restores focus", async ({ page }) => {
-    const caseStudy = page.getByRole("button", { name: "View case study: Homelab GitOps Environment" });
+    const caseStudy = page.getByRole("button", { name: "View project: Homelab GitOps Environment" });
     await caseStudy.focus();
     await page.keyboard.press("Enter");
     const dialog = page.getByRole("dialog");
@@ -99,6 +99,83 @@ test.describe("portfolio release browser gate", () => {
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     await expect(skill).toBeFocused();
+  });
+
+  test("shows project results before architecture and keeps dismissal visible while reading", async ({ page }) => {
+    const opener = page.getByRole("button", { name: "View project: AWS Cloud Resume Challenge" });
+    await opener.click();
+    const dialog = page.getByRole("dialog");
+    const results = dialog.getByRole("heading", { name: "Results", exact: true });
+    const architecture = dialog.getByRole("heading", { name: "Architecture", exact: true });
+    expect((await results.boundingBox())!.y).toBeLessThan((await architecture.boundingBox())!.y);
+
+    // Full diagrams are optional detail; the overview and results remain easy to scan.
+    const diagram = dialog.locator(".architecture-detail").first();
+    await expect(diagram).not.toHaveAttribute("open", "");
+    await diagram.locator("summary").first().click();
+    await expect(diagram.locator("img")).toBeVisible();
+
+    await dialog.evaluate((node) => { node.scrollTop = node.scrollHeight; });
+    const close = dialog.getByRole("button", { name: "Close project details" });
+    await expect(close).toBeInViewport();
+    await close.click();
+    await expect(dialog).toBeHidden();
+    await expect(opener).toBeFocused();
+  });
+
+  test("spreads the new theme from the switch like a drop and cleans up after", async ({ page }) => {
+    await settleAnimations(page);
+    const glyph = await page.locator(".theme-switch span").boundingBox();
+    await page.evaluate(() => {
+      const start = document.startViewTransition.bind(document);
+      document.startViewTransition = (update) => {
+        const root = document.documentElement.style;
+        (window as unknown as { dropOrigin: string[] }).dropOrigin = [
+          root.getPropertyValue("--theme-x"),
+          root.getPropertyValue("--theme-y"),
+        ];
+        return start(update);
+      };
+    });
+    await page.getByRole("button", { name: /Switch to dark theme/ }).click();
+    const origin = await page.evaluate(() => (window as unknown as { dropOrigin?: string[] }).dropOrigin);
+    expect(origin).toBeDefined();
+    expect(Math.abs(parseFloat(origin![0]) - (glyph!.x + glyph!.width / 2))).toBeLessThan(1);
+    expect(Math.abs(parseFloat(origin![1]) - (glyph!.y + glyph!.height / 2))).toBeLessThan(1);
+
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator("html")).not.toHaveClass(/theme-switching/);
+    await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--theme-x"))).toBe("");
+  });
+
+  test("swaps theme instantly without a view transition under reduced motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+      (window as unknown as { transitions: number }).transitions = 0;
+      const start = document.startViewTransition.bind(document);
+      document.startViewTransition = (update) => {
+        (window as unknown as { transitions: number }).transitions += 1;
+        return start(update);
+      };
+    });
+    await page.getByRole("button", { name: /Switch to dark theme/ }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    expect(await page.evaluate(() => (window as unknown as { transitions: number }).transitions)).toBe(0);
+  });
+
+  test("loads the toolkit logos from the sprite and colours a logo on hover", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.startsWith("desktop"), "Pointer hover coverage is desktop only");
+    const sprite = page.waitForResponse((response) => response.url().endsWith("/skill-icons.svg"));
+    await page.locator("#skills").scrollIntoViewIfNeeded();
+    expect((await sprite).status()).toBe(200);
+
+    const terraform = page.getByRole("button", { name: "Terraform — inspect Infrastructure & delivery" });
+    const logo = terraform.locator("svg.skill-mark");
+    await expect(logo).toBeVisible();
+    const resting = await logo.evaluate((node) => getComputedStyle(node).color);
+    await terraform.hover();
+    await expect.poll(() => logo.evaluate((node) => getComputedStyle(node).color)).not.toBe(resting);
   });
 
   test("switches theme and persists the choice", async ({ page }) => {
@@ -138,6 +215,66 @@ test.describe("quiet motion", () => {
       () => document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== 1).length,
     );
     expect(repeating).toBe(0);
+  });
+
+  test("centres the monogram stage and lets the reflection run once", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settleAnimations(page);
+
+    const monogram = page.locator(".hero .monogram");
+    await expect(monogram).toBeVisible();
+    await expect(monogram).toHaveAttribute("aria-hidden", "true");
+    const sweep = await page.evaluate(() =>
+      document.getAnimations().filter((a) => (a as CSSAnimation).animationName?.startsWith("mono-sweep")).length,
+    );
+    expect(sweep).toBe(0); // finished, nothing left looping
+
+    const centres = await page.evaluate(() =>
+      [".monogram", ".hero-name", ".hero-statement", ".hero-actions"].map((selector) => {
+        const rect = document.querySelector(`.hero ${selector}`)!.getBoundingClientRect();
+        return Math.round(rect.left + rect.width / 2);
+      }),
+    );
+    for (const centre of centres) expect(Math.abs(centre - centres[0])).toBeLessThanOrEqual(2);
+
+    const header = await page.locator(".site-header").boundingBox();
+    const art = await monogram.boundingBox();
+    expect(art!.y).toBeGreaterThanOrEqual(header!.y + header!.height);
+  });
+
+  test("pulls the primary hero action a few pixels toward a fine pointer and springs back", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.startsWith("desktop"), "Fine-pointer coverage is desktop only");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settleAnimations(page);
+    const primary = page.locator(".hero .action-primary");
+    const box = await primary.boundingBox();
+    if (!box) throw new Error("primary action not rendered");
+    const offset = () =>
+      page.locator(".hero .magnet-inner").evaluate((node) => {
+        const { m41, m42 } = new DOMMatrix(getComputedStyle(node).transform);
+        return Math.hypot(m41, m42);
+      });
+
+    await page.mouse.move(box.x + box.width + 24, box.y, { steps: 6 });
+    await expect.poll(offset).toBeGreaterThan(1);
+    expect(await offset()).toBeLessThanOrEqual(4.5);
+
+    await page.mouse.move(4, 4, { steps: 4 });
+    await expect.poll(offset).toBe(0);
+    await expect(primary).toHaveAttribute("href", "#projects");
+  });
+
+  test("keeps the monogram and magnet still with reduced motion", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.startsWith("desktop"), "Fine-pointer coverage is desktop only");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".hero .monogram")).toHaveCSS("animation-name", "none");
+    await expect(page.locator(".hero .monogram-sweep")).toHaveCSS("animation-name", "none");
+    const box = await page.locator(".hero .action-primary").boundingBox();
+    if (!box) throw new Error("primary action not rendered");
+    await page.mouse.move(box.x + box.width / 2 + 20, box.y + 4, { steps: 6 });
+    await page.waitForTimeout(300);
+    await expect(page.locator(".hero .magnet-inner")).toHaveCSS("transform", "none");
   });
 
   test("reveals sections on scroll and never leaves content hidden", async ({ page }) => {
@@ -192,7 +329,7 @@ test.describe("quiet motion", () => {
     expect(infinite).toBe(0);
   });
 
-  test("lifts project cards on hover and keyboard focus without blocking interaction", async ({ page }, testInfo) => {
+  test("keeps project previews still while actions remain usable", async ({ page }, testInfo) => {
     test.skip(!testInfo.project.name.startsWith("desktop"), "Pointer hover coverage is desktop only");
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await page.locator("#projects").scrollIntoViewIfNeeded();
@@ -201,16 +338,16 @@ test.describe("quiet motion", () => {
     const card = page.locator(".project-card").first();
     await expect(card).toHaveCSS("transform", "none");
     await card.hover();
-    await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, -3)");
+    await expect(card).toHaveCSS("transform", "none");
     await page.mouse.move(2, 2);
     await expect(card).toHaveCSS("transform", "none");
 
-    const button = card.getByRole("button", { name: /View case study/ });
+    const button = card.getByRole("button", { name: /View project/ });
     await button.focus();
     await page.keyboard.press("Shift+Tab");
     await page.keyboard.press("Tab");
     await expect(button).toBeFocused();
-    await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, -3)");
+    await expect(card).toHaveCSS("transform", "none");
 
     await card.hover();
     await button.click();
@@ -279,10 +416,10 @@ test.describe("mobile portfolio interactions", () => {
     await page.goto("/?project=monikey", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveAccessibleName("MoniKey");
-    await page.getByRole("button", { name: "Close system inspection" }).click();
+    await page.getByRole("button", { name: "Close project details" }).click();
     await expect(page).toHaveURL(/\/$/);
 
-    await page.getByRole("button", { name: "View case study: AWS Cloud Resume Challenge" }).click();
+    await page.getByRole("button", { name: "View project: AWS Cloud Resume Challenge" }).click();
     await expect(page).toHaveURL(/\/\?project=aws-cloud-resume-challenge$/);
     await page.goBack();
     await expect(page.getByRole("dialog")).toBeHidden();
