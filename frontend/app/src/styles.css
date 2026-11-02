@@ -454,20 +454,21 @@ body::after {
      name's width, so the mark frames the name instead of competing with it. */
   --mono-size: clamp(84px, min(6.6vw, 10.5svh), 120px);
   --name-size: clamp(2.75rem, min(8.4vw, 11.2svh), 7.25rem);
-  /* Sized by content, not the viewport: on desktop the Selected Work heading
-     comes into view below the facts, so the page reads as one sequence. */
-  padding: calc(var(--header-h) + clamp(36px, 6svh, 80px)) 0 clamp(40px, 4.5svh, 64px);
+  /* The hero fills the first screen. The monogram, name, copy and actions
+     sit centred in the space above the facts row, which is pinned to the
+     bottom so it rests just above the fold and hands over to Selected Work. */
+  min-height: 100svh;
+  padding: calc(var(--header-h) + clamp(32px, 5svh, 64px)) 0 clamp(24px, 3.2svh, 40px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   text-align: center;
 }
-/* Short desktop screens cannot show the next heading in full, so the hero
-   fills the viewport instead of leaving a sliver of it at the fold. */
-@media (min-width: 1000px) and (max-height: 820px) {
+/* Tall screens have room to spare: give it to the name and the mark. */
+@media (min-width: 1000px) and (min-height: 940px) {
   .hero {
-    min-height: 100svh;
+    --mono-size: clamp(84px, min(6.6vw, 11.5svh), 128px);
+    --name-size: clamp(2.75rem, min(8.4vw, 12.6svh), 8.5rem);
   }
 }
 /* The single light source sits behind the monogram. */
@@ -489,7 +490,9 @@ body::after {
 }
 .hero .monogram {
   width: var(--mono-size);
-  /* The contact shadow already reads as a gap; keep the mark close to the name. */
+  /* Auto margins here and under the actions centre the group vertically.
+     The contact shadow already reads as a gap; keep the mark close to the name. */
+  margin-top: auto;
   margin-bottom: clamp(12px, 1.6svh, 18px);
 }
 .monogram-art {
@@ -580,6 +583,7 @@ body::after {
   align-items: center;
   gap: 12px;
   margin-top: clamp(24px, 3.2svh, 32px);
+  margin-bottom: auto;
 }
 .magnet,
 .magnet-inner {
@@ -606,7 +610,8 @@ body::after {
   display: flex;
   justify-content: center;
   gap: clamp(28px, 5vw, 64px);
-  margin: clamp(28px, 3.6svh, 40px) 0 0;
+  /* Minimum gap only; on most screens the auto margins above add more. */
+  margin: clamp(32px, 4.5svh, 56px) 0 0;
   padding-top: 14px;
   border-top: 1px solid var(--color-rule);
   min-width: min(100%, 560px);
@@ -621,8 +626,8 @@ body::after {
 }
 @media (max-width: 999px) {
   .hero {
-    --mono-size: clamp(84px, 12vw, 112px);
-    --name-size: clamp(2.75rem, 10.5vw, 6rem);
+    --mono-size: clamp(76px, min(13vw, 12svh), 120px);
+    --name-size: clamp(2.75rem, min(12.5vw, 11svh), 7rem);
     padding-top: calc(var(--header-h) + clamp(40px, 7vw, 72px));
   }
 }
@@ -630,7 +635,7 @@ body::after {
   .hero {
     --mono-size: clamp(76px, 21vw, 88px);
     --name-size: clamp(2.5rem, 14.4vw, 4rem);
-    padding: calc(var(--header-h) + 32px) 0 40px;
+    padding: calc(var(--header-h) + 32px) 0 28px;
   }
   .hero-actions {
     display: grid;
