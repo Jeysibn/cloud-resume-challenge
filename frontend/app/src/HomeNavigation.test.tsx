@@ -28,7 +28,7 @@ describe("home navigation", () => {
     expect(document.querySelector("#top")).toHaveClass("hero");
   });
 
-  it("exposes four primary destinations plus Resume with stable anchors", () => {
+  it("exposes one destination per numbered section with stable anchors", () => {
     render(<SiteHeader activeSection="" theme="light" onTheme={vi.fn()} />);
 
     const nav = screen.getByRole("navigation", { name: "Primary navigation" });
@@ -37,19 +37,21 @@ describe("home navigation", () => {
       ["Work", "#projects"],
       ["Experience", "#experience"],
       ["Toolkit", "#skills"],
+      ["Credentials", "#credentials"],
       ["Contact", "#contact"],
-      ["Resume", "./resume.pdf"],
     ]);
   });
 
-  it("marks Toolkit current for both the skills and credentials sections", () => {
+  it("marks Toolkit and Credentials current for their own sections only", () => {
     const { rerender } = render(
       <SiteHeader activeSection="skills" theme="light" onTheme={vi.fn()} />,
     );
     expect(screen.getByRole("link", { name: "Toolkit" })).toHaveAttribute("aria-current", "location");
+    expect(screen.getByRole("link", { name: "Credentials" })).not.toHaveAttribute("aria-current");
 
     rerender(<SiteHeader activeSection="credentials" theme="light" onTheme={vi.fn()} />);
-    expect(screen.getByRole("link", { name: "Toolkit" })).toHaveAttribute("aria-current", "location");
+    expect(screen.getByRole("link", { name: "Credentials" })).toHaveAttribute("aria-current", "location");
+    expect(screen.getByRole("link", { name: "Toolkit" })).not.toHaveAttribute("aria-current");
     expect(screen.getByRole("link", { name: "Work" })).not.toHaveAttribute("aria-current");
   });
 
