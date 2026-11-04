@@ -1,67 +1,51 @@
 # Validation and current status
 
-This page records checks for the live Version 2 project. It separates automated checks from live AWS checks so that mocked tests are not mistaken for production tests.
+This page distinguishes local checks from live AWS checks. The unique-IP counter change is validated locally; no AWS resources or live API were accessed during its implementation.
 
-## Local checks
+## Local checks for the current source
 
-The following checks passed against the V2 source during the release preparation:
+The following checks passed locally on November 4, 2026:
+
+```bash
+python3 -m unittest discover -s backend/tests -v
+python3 -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py
+python3 backend/lambda-v2/package.py
+cd frontend/app
+npm run typecheck
+npm run lint
+npm test -- --run
+npm run build
+cd ../../infra/terraform
+terraform fmt -check
+terraform validate
+```
 
 | Check | Result |
 | --- | --- |
-| `terraform fmt -check` and `terraform validate` | Passed |
-| `python3 -m unittest discover -s backend/tests -v` | 17 tests passed; AWS calls are mocked |
+| `python3 -m unittest discover -s backend/tests -v` | Passed: 27 tests, including V1 source tests; AWS calls are mocked |
+| Python compilation and Lambda ZIP packaging | Passed; ZIP contains `lambda_function.py` at the root |
 | Frontend typecheck and lint | Passed |
-| `npm test -- --run` | 58 tests passed in 15 files |
-| Production build | Passed with the V2 API URL |
-| Metadata check | Passed; canonical URL is `https://jeysibn.dev/`, with social preview URLs on the custom domain |
-| Performance budget | Passed: JavaScript bundle is below the configured budget |
-| `git diff --check` | Passed |
+| `npm test -- --run` | Passed: 73 tests in 16 files |
+| Frontend production build | Passed |
+| `terraform fmt -check` and `terraform validate` | Passed |
 
-The backend tests and frontend unit tests do not modify AWS or the live counter.
+Backend and frontend tests use mocks and do not modify AWS or the live counter. Terraform validation checks configuration; it does not deploy anything. The unique-IP implementation has not been smoke-tested against AWS yet.
 
-## GitHub Actions checks
+## Previous live validation (historical behavior)
 
-- PR #4: `build-and-test` passed; `Deploy V2 to AWS` was skipped for the pull request.
-- Manual OIDC deployment: [workflow run 41213992608](https://github.com/Jeysibn/cloud-resume-challenge/actions/runs/41213992608) passed both build and deployment jobs.
+The following evidence predates the unique-IP change and validated the former **Record My Visit** button flow. It does not prove the current automatic registration or TTL behavior.
 
-The deployment workflow runs checks and builds a website artifact. Only a manual run on `main` deploys it.
-
-## Live checks
-
-- The live homepage returned HTTP 200 after the first OIDC deployment.
-- The published JavaScript contained the V2 API endpoint.
-- `GET /visits` returned HTTP 200 with `{"count":0}` after the counter was initialized.
-- CloudFront accepted the invalidation request from the OIDC deployment workflow.
-
-During the initial deployment checks, no production POST request was sent. A later end-to-end test on November 1, 2026 verified the POST functionality. The counter tracks recorded actions, not unique visitors.
-
-### Mission 9.1 — Visitor Counter End-to-End Test
+### Mission 9.1 — Previous Visitor Counter End-to-End Test
 
 **Date:** November 1, 2026
 
 **Environment:** AWS V2 (`ap-southeast-2`, Sydney)
 
-**Overall Result:** PASS
+**Result:** PASS for the button-click counter then deployed
 
-**Objective:** Verify that the visitor counter works correctly from the frontend through the AWS backend and database.
+The earlier test clicked **Record My Visit**, observed the count increase by one, confirmed the DynamoDB count, and refreshed the page. Those results describe the old behavior only. A new post-deployment smoke check should send two POSTs from the same machine: the first should return `counted: true`, the second `counted: false`; verify the DynamoDB `ip#...` item has numeric `expires_at`.
 
-| Test | Expected Result | Actual Result | Status |
-| --- | --- | --- | --- |
-| Initial counter | Displays 0 | Displayed 0 | PASS |
-| Record My Visit button | Increases count by 1 | Changed from 0 to 1 | PASS |
-| DynamoDB verification | Stores the updated count | Count was 1 | PASS |
-| CloudWatch verification | Logs the Lambda POST request | POST request recorded | PASS |
-| Browser refresh | Retains the saved count | Still displayed 1 | PASS |
-
-**Conclusion:**
-
-The visitor counter passed end-to-end testing. Clicking the Record My Visit button updated the displayed count from 0 to 1. DynamoDB stored the updated value, and CloudWatch recorded the POST request.
-
-After refreshing the website, the counter remained at 1, confirming that the frontend could retrieve the persisted count.
-
-No infrastructure changes were required during this test.
-
-Screenshots from the live test:
+Screenshots from the prior live test:
 
 ![Portfolio footer showing one recorded visit](images/testing/visitor-counter-frontend.jpg)
 
@@ -69,7 +53,19 @@ Screenshots from the live test:
 
 ![DynamoDB visitor counter item with count 1](images/testing/dynamodb-visitor-count.png)
 
-This evidence is from a live AWS check, not an automated test. `POST /visits` changes the real counter. The counter tracks recorded actions, not unique visitors.
+The old live checks reported the homepage and GET endpoint working and had no production POST during the initial deployment. The November 1 button test later sent a production POST. No current live API check has been performed for the unique-IP change.
+
+### Custom domain and follow-up counter check
+
+**Date:** November 1, 2026
+
+**Environment:** AWS V2 (`ap-southeast-2`, Sydney)
+
+**Result:** PASS for the prior button-click implementation
+
+The portfolio was opened successfully at [https://jeysibn.dev](https://jeysibn.dev). A follow-up live test clicked **Record My Visit** and increased the count from 1 to 2. This is historical production evidence for the prior implementation, not validation of the unique-IP behavior.
+
+The CloudFront distribution remains the delivery layer behind the custom domain.
 
 ### Custom domain and follow-up counter check
 
@@ -85,7 +81,7 @@ The CloudFront distribution remains the delivery layer behind the custom domain.
 
 ## Dependency audit
 
-The latest recorded `npm audit` on 2026-11-01 found 12 moderate issues in development tooling; `npm audit --omit=dev` found none in production dependencies. See the [dependency security check](../frontend/app/DEPENDENCY-SECURITY-REVIEW.md) for details and recheck commands. This audit is separate from the passing build and tests.
+The latest recorded `npm audit` on 2026-11-01 found 12 moderate issues in development tooling; `npm audit --omit=dev` found none in production dependencies. See the [dependency security check](../frontend/app/DEPENDENCY-SECURITY-REVIEW.md) for details and recheck commands. This audit is separate from the build and test results above.
 
 ## Version 1 history
 

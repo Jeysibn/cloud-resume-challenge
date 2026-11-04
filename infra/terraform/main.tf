@@ -3,6 +3,12 @@ locals {
   name = "cloud-resume-v2"
 }
 
+variable "ip_hash_secret" {
+  description = "Secret key used to HMAC visitor IP prefixes before storing them in DynamoDB."
+  type        = string
+  sensitive   = true
+}
+
 data "aws_caller_identity" "current" {}
 
 # Private website storage; frontend files will be deployed by GitHub Actions.
@@ -108,6 +114,10 @@ resource "aws_dynamodb_table" "visitors" {
     name = "id"
     type = "S"
   }
+  ttl {
+    attribute_name = "expires_at"
+    enabled        = true
+  }
 }
 
 resource "aws_cloudwatch_log_group" "lambda" {
@@ -140,7 +150,7 @@ resource "aws_iam_role_policy" "lambda" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["dynamodb:GetItem", "dynamodb:UpdateItem"]
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"]
         Resource = aws_dynamodb_table.visitors.arn
       },
       {
@@ -165,7 +175,11 @@ resource "aws_lambda_function" "visitor" {
   publish          = false
 
   environment {
-    variables = { TABLE_NAME = aws_dynamodb_table.visitors.name }
+    variables = {
+      TABLE_NAME        = aws_dynamodb_table.visitors.name
+      IP_HASH_SECRET    = var.ip_hash_secret
+      VISIT_TTL_SECONDS = "86400"
+    }
   }
 
   logging_config {

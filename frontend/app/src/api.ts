@@ -17,18 +17,29 @@ async function requestVisits(method: "GET" | "POST", signal?: AbortSignal): Prom
   return response;
 }
 
-// Assumed contract pending confirmation from the deployed AWS Lambda: { count: number }.
+function isCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
 export async function fetchVisitorCount(signal?: AbortSignal): Promise<number> {
   const response = await requestVisits("GET", signal);
   const payload: unknown = await response.json();
-  if (typeof payload !== "object" || payload === null || !("count" in payload) ||
-      typeof payload.count !== "number" || !Number.isSafeInteger(payload.count) || payload.count < 0) {
+  if (typeof payload !== "object" || payload === null || !("count" in payload) || !isCount(payload.count)) {
     throw new Error("Visits API returned an invalid count.");
   }
   return payload.count;
 }
 
-/** Never retry this request automatically: a failed response may hide a successful increment. */
-export async function recordVisit(signal?: AbortSignal): Promise<void> {
-  await requestVisits("POST", signal);
+export type VisitRegistration = { counted: boolean; count: number };
+
+/** The server deduplicates POSTs per IP and TTL window, so callers may safely retry. */
+export async function registerVisit(signal?: AbortSignal): Promise<VisitRegistration> {
+  const response = await requestVisits("POST", signal);
+  const payload: unknown = await response.json();
+  if (typeof payload !== "object" || payload === null ||
+      !("counted" in payload) || typeof payload.counted !== "boolean" ||
+      !("count" in payload) || !isCount(payload.count)) {
+    throw new Error("Visits API returned an invalid registration.");
+  }
+  return { counted: payload.counted, count: payload.count };
 }

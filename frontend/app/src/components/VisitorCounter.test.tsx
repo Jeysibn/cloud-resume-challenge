@@ -1,44 +1,73 @@
+import { StrictMode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { VisitorCounter } from "./VisitorCounter";
-import { fetchVisitorCount, recordVisit } from "../api";
-vi.mock("../api", async original => ({ ...await original<typeof import("../api")>(), fetchVisitorCount:vi.fn(), recordVisit:vi.fn() }));
-beforeEach(() => { vi.stubEnv("VITE_API_BASE_URL","https://example.test"); vi.mocked(fetchVisitorCount).mockResolvedValue(42); });
+import { fetchVisitorCount, registerVisit } from "../api";
+
+vi.mock("../api", async original => ({
+  ...await original<typeof import("../api")>(),
+  fetchVisitorCount: vi.fn(),
+  registerVisit: vi.fn(),
+}));
+
+beforeEach(() => {
+  vi.stubEnv("VITE_API_BASE_URL", "https://example.test");
+  vi.mocked(registerVisit).mockResolvedValue({ counted: true, count: 42 });
+  vi.mocked(fetchVisitorCount).mockResolvedValue(42);
+});
 afterEach(() => { cleanup(); vi.resetAllMocks(); vi.unstubAllEnvs(); });
-it("GET on mount without POST", async () => {
- render(<VisitorCounter/>); expect(screen.getByText(/loading/)).toBeInTheDocument(); await screen.findByText(/Recorded visits · 42/); expect(recordVisit).not.toHaveBeenCalled();
+
+it("automatically registers on mount and displays the returned count", async () => {
+  render(<VisitorCounter />);
+  expect(screen.getByText(/Recorded visits · loading/)).toBeInTheDocument();
+  await screen.findByText(/Recorded visits · 42/);
+  expect(registerVisit).toHaveBeenCalledTimes(1);
+  expect(fetchVisitorCount).not.toHaveBeenCalled();
+  expect(screen.queryByRole("button", { name: /Record My Visit/ })).not.toBeInTheDocument();
 });
-it("manually retries failed GET", async () => {
- vi.mocked(fetchVisitorCount).mockRejectedValueOnce(Error()); render(<VisitorCounter/>); await screen.findByRole("alert");
- fireEvent.click(screen.getByText("Retry")); await screen.findByText(/Recorded visits · 42/); expect(fetchVisitorCount).toHaveBeenCalledTimes(2);
+
+it("only registers once when StrictMode replays the mount effect", async () => {
+  render(<StrictMode><VisitorCounter /></StrictMode>);
+  await screen.findByText(/Recorded visits · 42/);
+  expect(registerVisit).toHaveBeenCalledTimes(1);
 });
-it("explicit POST prevents duplicates and refreshes", async () => {
- let finish!:()=>void; vi.mocked(recordVisit).mockImplementation(()=>new Promise<void>(resolve=>{finish=resolve;}));
- render(<VisitorCounter/>); await screen.findByText(/Recorded visits · 42/);
- fireEvent.click(screen.getByText("Record My Visit")); const button=screen.getByText("Recording…"); expect(button).toBeDisabled(); fireEvent.click(button);
- vi.mocked(fetchVisitorCount).mockResolvedValue(43); finish(); await screen.findByText(/Recorded visits · 43/); expect(recordVisit).toHaveBeenCalledTimes(1);
- expect(screen.getByText("Record My Visit")).toBeDisabled();
+
+it("falls back to GET when automatic registration fails", async () => {
+  vi.mocked(registerVisit).mockRejectedValueOnce(Error("POST failed"));
+  vi.mocked(fetchVisitorCount).mockResolvedValueOnce(41);
+  render(<VisitorCounter />);
+  await screen.findByText(/Recorded visits · 41/);
+  expect(registerVisit).toHaveBeenCalledTimes(1);
+  expect(fetchVisitorCount).toHaveBeenCalledTimes(1);
 });
-it("failed POST is never automatically retried", async () => {
- vi.mocked(recordVisit).mockRejectedValue(Error()); render(<VisitorCounter/>); await screen.findByText(/Recorded visits · 42/);
- fireEvent.click(screen.getByText("Record My Visit")); await screen.findByText(/Recording could not be confirmed/);
- fireEvent.click(screen.getByText("Retry")); await screen.findByText(/Recorded visits · 42/); expect(recordVisit).toHaveBeenCalledTimes(1);
+
+it("Retry only re-reads the count after registration and fallback read fail", async () => {
+  vi.mocked(registerVisit).mockRejectedValueOnce(Error("POST failed"));
+  vi.mocked(fetchVisitorCount).mockRejectedValueOnce(Error("GET failed")).mockResolvedValueOnce(42);
+  render(<VisitorCounter />);
+  await screen.findByRole("alert");
+  fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+  await screen.findByText(/Recorded visits · 42/);
+  expect(registerVisit).toHaveBeenCalledTimes(1);
+  expect(fetchVisitorCount).toHaveBeenCalledTimes(2);
 });
-it("missing config makes no calls", () => {
- vi.stubEnv("VITE_API_BASE_URL",""); render(<VisitorCounter/>); expect(screen.getByText(/not configured/)).toBeInTheDocument(); expect(fetchVisitorCount).not.toHaveBeenCalled();
+
+it("does not call the API when the base URL is missing", () => {
+  vi.stubEnv("VITE_API_BASE_URL", "");
+  render(<VisitorCounter />);
+  expect(screen.getByText(/not configured/)).toBeInTheDocument();
+  expect(registerVisit).not.toHaveBeenCalled();
+  expect(fetchVisitorCount).not.toHaveBeenCalled();
 });
-it("aborts on unmount", () => {
- const {unmount}=render(<VisitorCounter/>); const signal=vi.mocked(fetchVisitorCount).mock.calls[0][0]; unmount(); expect(signal?.aborted).toBe(true);
-});
-it("cancels a pending POST on unmount", async () => {
- vi.mocked(recordVisit).mockImplementation(()=>new Promise<void>(()=>{}));
- const {unmount}=render(<VisitorCounter/>); await screen.findByText(/Recorded visits · 42/);
- fireEvent.click(screen.getByText("Record My Visit"));
- const signal=vi.mocked(recordVisit).mock.calls[0][0]; unmount(); expect(signal?.aborted).toBe(true);
-});
-it("keeps a successful recording locked when its GET refresh fails", async () => {
- vi.mocked(recordVisit).mockResolvedValue(); render(<VisitorCounter/>); await screen.findByText(/Recorded visits · 42/);
- vi.mocked(fetchVisitorCount).mockRejectedValueOnce(Error()); fireEvent.click(screen.getByText("Record My Visit"));
- await screen.findByRole("alert"); expect(screen.getByText("Your visit was recorded.")).toBeInTheDocument();
- expect(screen.getByText("Record My Visit")).toBeDisabled(); expect(recordVisit).toHaveBeenCalledTimes(1);
+
+it("aborts a retry GET when unmounted", async () => {
+  let finish!: (count: number) => void;
+  vi.mocked(registerVisit).mockRejectedValueOnce(Error("POST failed"));
+  vi.mocked(fetchVisitorCount).mockImplementationOnce((_signal?: AbortSignal) => new Promise(resolve => { finish = resolve; }));
+  const { unmount } = render(<VisitorCounter />);
+  await screen.findByText(/Recorded visits · loading/);
+  const signal = vi.mocked(fetchVisitorCount).mock.calls[0][0];
+  unmount();
+  expect(signal?.aborted).toBe(true);
+  finish(42);
 });
