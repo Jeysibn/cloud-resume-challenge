@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="architecture-title architecture-desc">
   <title id="architecture-title">Runtime architecture</title>
-  <desc id="architecture-desc">CloudFront serves the React site from private Amazon S3 using Origin Access Control. When the visitor-counter component mounts, React automatically posts to API Gateway. Python Lambda HMAC-SHA256 hashes IPv4 addresses and IPv6 /64 prefixes, then DynamoDB atomically records each digest and increments the existing counter only once per configured 24-hour window. GET reads the count if registration fails. DynamoDB TTL expires digest records. The total retains historical counts and represents approximate IP-based visitor deduplication, not unique people. CloudWatch stores Lambda logs.</desc>
+  <desc id="architecture-desc">CloudFront serves the React site from private Amazon S3 using Origin Access Control. When the visitor-counter component mounts, React automatically sends POST /visits to API Gateway. Python Lambda HMAC-SHA256 hashes IPv4 addresses and IPv6 /64 prefixes, then DynamoDB atomically records each digest and increments the existing counter only once per configured 24-hour window. GET /visits reads the count if registration fails. DynamoDB TTL expires digest records. The total retains historical counts and represents approximate IP-based visitor deduplication, not unique people. CloudWatch stores Lambda logs.</desc>
   <defs>
     <style>
       .title{font:600 51px system-ui, sans-serif;fill:#171912}
@@ -65,7 +65,7 @@
 <path class="edge" d="M1140 599 H1235"/>
 <path class="edge" d="M241 397 V457 H245 V531"/>
 <text x="275" y="447" class="detail">Mount: POST · fallback GET</text>
-<text x="110" y="693" class="note">On mount, React automatically POSTs /visits; GET /visits supplies the count if registration fails.</text>
+<text x="110" y="693" class="note">On mount, React sends POST /visits; GET /visits supplies the count if registration fails.</text>
 <text x="110" y="716" class="note">Lambda HMAC-SHA256 hashes IPv4 addresses and IPv6 /64 prefixes; DynamoDB atomically increments once per digest per configured 24-hour window.</text>
 <text x="110" y="739" class="note">TTL expires digest records. The total preserves historical counts; this is approximate IP-based deduplication, not a count of unique people.</text>
 
