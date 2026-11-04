@@ -10,6 +10,9 @@ from types import ModuleType, SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
+import boto3
+from botocore.stub import Stubber
+
 SOURCE = Path(__file__).resolve().parents[1] / "lambda-v2" / "lambda_function.py"
 ENV = {"TABLE_NAME": "test-v2-table", "IP_HASH_SECRET": "test-secret"}
 
@@ -70,6 +73,7 @@ class V2HandlerTests(unittest.TestCase):
         resource.Table.return_value = self.table
         boto3 = ModuleType("boto3")
         boto3.resource = Mock(return_value=resource)
+        boto3.client = Mock(return_value=self.client)
         spec = importlib.util.spec_from_file_location("v2_lambda", SOURCE)
         module = importlib.util.module_from_spec(spec)
         with patch.dict("sys.modules", {"boto3": boto3}), patch.dict(
@@ -77,6 +81,7 @@ class V2HandlerTests(unittest.TestCase):
         ):
             spec.loader.exec_module(module)
         resource.Table.assert_called_once_with(environment["TABLE_NAME"])
+        boto3.client.assert_called_once_with("dynamodb")
         return module
 
     @staticmethod
@@ -149,6 +154,78 @@ class V2HandlerTests(unittest.TestCase):
         self.assertEqual(update["Update"]["ExpressionAttributeValues"][":inc"], {"N": "1"})
         self.assertNotIn("203.0.113.7", repr(args))
         self.table.get_item.assert_called_once_with(
+            Key={"id": "visitors"}, ConsistentRead=True
+        )
+
+    def test_transaction_uses_direct_client_with_typed_attribute_values(self):
+        session = boto3.Session(
+            aws_access_key_id="test-access-key",
+            aws_secret_access_key="test-secret-key",
+            region_name="ap-southeast-2",
+        )
+        resource = session.resource("dynamodb")
+        client = session.client("dynamodb")
+        with patch("boto3.resource", return_value=resource), patch(
+            "boto3.client", return_value=client
+        ), patch.dict("os.environ", ENV, clear=True):
+            spec = importlib.util.spec_from_file_location("v2_lambda_wire", SOURCE)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+        module.table.get_item = Mock(return_value={"Item": {"count": 43}})
+        digest = hmac.new(
+            b"test-secret", b"203.0.113.7", hashlib.sha256
+        ).hexdigest()
+        expected_transaction = {
+            "TransactItems": [
+                {
+                    "Put": {
+                        "TableName": ENV["TABLE_NAME"],
+                        "Item": {
+                            "id": {"S": f"ip#{digest}"},
+                            "expires_at": {"N": "1700086400"},
+                        },
+                        "ConditionExpression": "attribute_not_exists(#id) OR #exp <= :now",
+                        "ExpressionAttributeNames": {
+                            "#id": "id",
+                            "#exp": "expires_at",
+                        },
+                        "ExpressionAttributeValues": {":now": {"N": "1700000000"}},
+                    }
+                },
+                {
+                    "Update": {
+                        "TableName": ENV["TABLE_NAME"],
+                        "Key": {"id": {"S": "visitors"}},
+                        "UpdateExpression": "SET #count = #count + :inc",
+                        "ConditionExpression": "attribute_exists(#id)",
+                        "ExpressionAttributeNames": {"#count": "count", "#id": "id"},
+                        "ExpressionAttributeValues": {":inc": {"N": "1"}},
+                    }
+                },
+            ]
+        }
+
+        with Stubber(client) as stubber, Stubber(resource.meta.client):
+            stubber.add_response(
+                "transact_write_items", {}, expected_transaction
+            )
+            with patch.object(module.time, "time", return_value=1_700_000_000):
+                result = module.lambda_handler(self.post_event(), None)
+
+        self.assert_count_response(result, 43, True)
+        put = expected_transaction["TransactItems"][0]["Put"]
+        update = expected_transaction["TransactItems"][1]["Update"]
+        self.assertEqual(
+            put["Item"]["id"], {"S": put["Item"]["id"]["S"]}
+        )
+        self.assertEqual(
+            put["Item"]["expires_at"], {"N": "1700086400"}
+        )
+        self.assertEqual(put["ExpressionAttributeValues"][":now"], {"N": "1700000000"})
+        self.assertEqual(update["Key"]["id"], {"S": "visitors"})
+        self.assertEqual(update["ExpressionAttributeValues"][":inc"], {"N": "1"})
+        module.table.get_item.assert_called_once_with(
             Key={"id": "visitors"}, ConsistentRead=True
         )
 
