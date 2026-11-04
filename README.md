@@ -25,7 +25,7 @@ flowchart LR
     Actions -->|Requests cache refresh| CloudFront
 ```
 
-CloudFront delivers the website files. It reads them from a private S3 bucket through Origin Access Control (OAC). The browser calls API Gateway directly for the counter: `GET /visits` reads the count, and clicking **Record My Visit** sends `POST /visits` to increase it. The count is recorded actions, not unique people.
+CloudFront delivers the website files. It reads them from a private S3 bucket through Origin Access Control (OAC). When the visitor-counter component mounts, React automatically sends `POST /visits`. Lambda derives an HMAC-SHA256 digest from the source IPv4 address or IPv6 `/64` prefix, then DynamoDB atomically records the digest and increments the existing counter only if that identifier has not been registered within the configured 24-hour window. Repeated visits from the same IP-derived identifier during that window do not increment the count. `GET /visits` reads the current count and is used if registration fails; DynamoDB TTL expires digest records. The total preserves historical counts from the previous implementation. This is approximate IP-based visitor deduplication, not an exact count of unique people.
 
 Terraform creates and configures the V2 AWS resources. The DynamoDB table is managed by Terraform, while its starting counter item is initialized separately. Terraform also stores its V2 state in a dedicated S3 bucket and key.
 

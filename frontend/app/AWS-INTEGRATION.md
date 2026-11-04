@@ -10,12 +10,13 @@ Vite embeds this value in the built JavaScript. For local development, copy `.en
 
 ## How the counter behaves
 
-- On page load, the website sends one `POST /visits` and displays the returned count. React StrictMode effect replay shares the same in-flight registration.
-- Lambda counts the source IP once per 24-hour window. It groups IPv6 addresses by `/64`, stores only an HMAC-SHA256 digest, and returns whether this request incremented the total.
+- When the visitor-counter component mounts, the website automatically sends one `POST /visits` and displays the returned count. React StrictMode effect replay shares the same in-flight registration.
+- Lambda derives an HMAC-SHA256 digest from the source IPv4 address or IPv6 `/64` prefix. A DynamoDB transaction records the digest and increments the existing counter only if it has not been registered within the configured 24-hour window; repeated visits by the same IP-derived identifier during that window do not increment it.
 - If POST fails, the website falls back to `GET /visits` to display the current count. **Retry** only repeats this GET.
 - The POST is idempotent per IP and TTL window, so clients may safely retry it. The frontend does not automatically retry it.
+- DynamoDB TTL expires visitor-digest records. The total preserves historical counts from the previous implementation.
 
-This approximates unique public IPs per 24-hour window, not people. Shared NAT/CGNAT can undercount, while VPN or mobile IP rotation can overcount. Bots and crawlers that run JavaScript can be counted. The API remains public and unauthenticated, so it is not abuse protection.
+This is approximate IP-based visitor deduplication, not an exact count of unique people. Shared NAT/CGNAT can undercount, while VPN or mobile IP rotation can overcount. Bots and crawlers that run JavaScript can be counted. The API remains public and unauthenticated, so it is not abuse protection.
 
 The handler does not store or log raw IPs. HMAC hashes still raise privacy concerns and may remain personal data under some regimes. DynamoDB TTL deletes digest records after expiry, typically within 24–48 hours; the transaction checks `expires_at` so late TTL cleanup does not delay recounting.
 
