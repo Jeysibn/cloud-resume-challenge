@@ -10,7 +10,7 @@
 
 I built and deployed a personal portfolio website using AWS to gain hands-on experience with cloud infrastructure, serverless applications, and basic DevOps practices.
 
-The website displays my portfolio and includes a visitor counter that users can interact with.
+The website displays my portfolio and automatically registers an approximate IP-based visitor count when the visitor-counter component loads.
 
 I divided the project into two versions. In Version 1, I manually configured AWS resources through the Management Console to understand how the services work. In Version 2, I recreated the infrastructure using Terraform and introduced GitHub Actions for automated code testing and frontend deployment.
 
@@ -32,8 +32,8 @@ I used AWS Lambda with Python to handle visitor counter requests without managin
 
 API Gateway exposes two endpoints:
 
-- `GET /visits` — retrieves the current visitor count.
-- `POST /visits` — increases the visitor count by one when the user clicks the Record My Visit button.
+- `GET /visits` — retrieves the current count and serves as a fallback if registration fails.
+- `POST /visits` — automatically registers when the visitor-counter component mounts. Lambda derives an HMAC-SHA256 digest from the source IPv4 address or IPv6 `/64` prefix; a DynamoDB transaction records the digest and increments the existing count only if the identifier has not been registered within the configured 24-hour window.
 
 Both API routes connect to the same Lambda function.
 
@@ -41,9 +41,9 @@ I configured API Gateway CORS to allow the portfolio's custom domain (and the Cl
 
 **Database — Amazon DynamoDB**
 
-I used DynamoDB to store the visitor counter value.
+I used DynamoDB to store the visitor counter value and temporary IP-derived digest records. TTL expires the digest records, while the existing total preserves historical counts from the previous implementation.
 
-The Lambda execution role has IAM permissions to read and update the counter using `GetItem` and `UpdateItem`.
+The Lambda execution role has scoped DynamoDB permissions for `GetItem`, `PutItem`, and `UpdateItem` on the visitor table.
 
 This allows the visitor count to remain saved even when the website is refreshed.
 
@@ -79,15 +79,11 @@ For backend changes, I run tests and manually deploy the updated Lambda package 
 
 I tested the application using the deployed AWS environment.
 
-Initially, the website displayed a visitor count of 0.
+In the historical live test, the previous counter displayed 0 before the manual increment.
 
-After clicking the Record My Visit button, the count increased to 1.
+The previous counter implementation was manually incremented during historical validation. The current implementation automatically registers on component mount and deduplicates repeated requests from the same IP-derived identifier within the configured 24-hour window.
 
-I verified that DynamoDB stored the value of 1 and that CloudWatch recorded the POST request.
-
-I then refreshed the website and confirmed that the count remained at 1.
-
-This demonstrated that the frontend, API Gateway, Lambda, and DynamoDB were communicating correctly and that the data was persisted.
+Earlier live testing verified that DynamoDB stored the counter and CloudWatch recorded a POST request. Those checks predate IP-based deduplication and do not validate the current behavior. The current count is approximate IP-based visitor deduplication, not an exact count of unique people; shared networks can combine visitors and changing addresses can count one person more than once. The aggregate retains historical counts from the previous implementation.
 
 See the [validation record](validation.md#mission-91--visitor-counter-end-to-end-test) for the test results and screenshots.
 

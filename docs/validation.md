@@ -33,7 +33,7 @@ Backend and frontend tests use mocks and do not modify AWS or the live counter. 
 
 ## Previous live validation (historical behavior)
 
-The following evidence predates the unique-IP change and validated the former **Record My Visit** button flow. It does not prove the current automatic registration or TTL behavior.
+The following evidence predates the unique-IP change and validated the former **Record My Visit** button flow. It does not prove the current automatic registration, IP-derived deduplication, or TTL behavior. The current implementation retains the previous counter's aggregate total; no live POST was sent as part of the documentation update.
 
 ### Mission 9.1 — Previous Visitor Counter End-to-End Test
 
@@ -43,7 +43,7 @@ The following evidence predates the unique-IP change and validated the former **
 
 **Result:** PASS for the button-click counter then deployed
 
-The earlier test clicked **Record My Visit**, observed the count increase by one, confirmed the DynamoDB count, and refreshed the page. Those results describe the old behavior only. A new post-deployment smoke check should send two POSTs from the same machine: the first should return `counted: true`, the second `counted: false`; verify the DynamoDB `ip#...` item has numeric `expires_at`.
+The earlier test clicked **Record My Visit**, observed the count increase by one, confirmed the DynamoDB count, and refreshed the page. Those results describe the old behavior only. Current POST registration is automatic on component mount; repeated requests from the same IP-derived identifier do not increment the count again within the configured 24-hour window. Current AWS behavior has not been live-verified in this record.
 
 Screenshots from the prior live test:
 
@@ -75,7 +75,7 @@ The CloudFront distribution remains the delivery layer behind the custom domain.
 
 **Result:** PASS
 
-The portfolio was opened successfully at [https://jeysibn.dev](https://jeysibn.dev). In a follow-up live test, clicking **Record My Visit** increased the counter from 1 to 2. This is a live production counter update reported after the original Mission 9.1 test; it is not an automated CI test.
+The portfolio was opened successfully at [https://jeysibn.dev](https://jeysibn.dev). In a follow-up historical test of the prior button-based implementation, clicking **Record My Visit** increased the counter from 1 to 2. This live production update is not an automated CI test and does not validate the current unique-IP behavior.
 
 The CloudFront distribution remains the delivery layer behind the custom domain. The custom domain is the URL to share publicly.
 

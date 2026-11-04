@@ -1,10 +1,32 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+type PublicApiStub = {
+  methods: string[];
+  failNextPost: boolean;
+};
+
+const publicApiStubs = new WeakMap<import("@playwright/test").Page, PublicApiStub>();
+
 async function stubPublicApi(page: import("@playwright/test").Page) {
-  await page.route("**/visits", (route) =>
-    route.fulfill({ contentType: "application/json", body: JSON.stringify({ count: 42 }) }),
-  );
+  const stub: PublicApiStub = { methods: [], failNextPost: false };
+  publicApiStubs.set(page, stub);
+  await page.route("**/visits", async (route) => {
+    const method = route.request().method();
+    stub.methods.push(method);
+    if (method === "POST" && stub.failNextPost) {
+      stub.failNextPost = false;
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Mock registration failure" }),
+      });
+      return;
+    }
+
+    const body = method === "POST" ? { counted: true, count: 42 } : { count: 42 };
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
+  });
 }
 
 async function expectNoHorizontalOverflow(page: import("@playwright/test").Page) {
@@ -431,13 +453,24 @@ test.describe("mobile portfolio interactions", () => {
     await expectNoHorizontalOverflow(page);
   });
 
-  test("removes the assistant and keeps the counter accessible", async ({ page }) => {
+  test("registers automatically and keeps the counter accessible", async ({ page }) => {
     await expect(page.getByRole("button", { name: /Ask this portfolio/ })).toHaveCount(0);
     const counter = page.locator(".visitor-counter");
-    await expect(counter).toContainText("Recorded visits");
-    const record = counter.getByRole("button", { name: "Record My Visit" });
-    await expect(record).toBeVisible();
-    expect(await record.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThan(0);
+    await expect(counter.getByRole("status")).toHaveText("Recorded visits · 42");
+    await expect(counter.getByRole("button", { name: "Record My Visit" })).toHaveCount(0);
+    expect(publicApiStubs.get(page)?.methods).toEqual(["POST"]);
+    expect((await new AxeBuilder({ page }).include(".visitor-counter").analyze()).violations).toEqual([]);
+  });
+
+  test("falls back to GET when automatic registration fails", async ({ page }) => {
+    const stub = publicApiStubs.get(page)!;
+    stub.methods.length = 0;
+    stub.failNextPost = true;
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+
+    await expect(page.locator(".visitor-counter").getByRole("status")).toHaveText("Recorded visits · 42");
+    expect(stub.methods).toEqual(["POST", "GET"]);
     expect((await new AxeBuilder({ page }).include(".visitor-counter").analyze()).violations).toEqual([]);
   });
 

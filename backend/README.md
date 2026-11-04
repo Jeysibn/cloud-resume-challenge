@@ -7,8 +7,9 @@ The live V2 visitor counter uses a Python Lambda function and DynamoDB. The hand
 API Gateway sends HTTP API events to `lambda_function.lambda_handler`.
 
 - `GET /visits` reads `id = visitors` consistently and returns `{"count": n}`. It does not change the count.
+- When the visitor-counter component mounts, React automatically sends `POST /visits`. If registration fails, the frontend uses `GET /visits` to display the current count.
 - `POST /visits` reads the source IP supplied by API Gateway, validates it, and stores only an HMAC-SHA256 digest. IPv6 addresses are grouped by `/64`.
-- One DynamoDB transaction writes the digest item with its expiry and increments the existing counter. Its condition checks `expires_at` against the current time, so a delayed DynamoDB TTL deletion does not block a later visit.
+- One DynamoDB transaction writes the digest item with its expiry and increments the existing counter only when that IP-derived identifier has no active record in the configured window. Its condition checks `expires_at` against the current time, so delayed DynamoDB TTL deletion does not block a later visit.
 - A repeat request from the same IP (or IPv6 `/64`) during the window returns `{"counted": false, "count": n}`. A newly counted IP returns `{"counted": true, "count": n}`. The default window is 24 hours.
 - The counter item is initialized separately from Terraform. If it is missing, GET and POST return 404; the transaction cannot leave an IP record behind when the counter update fails.
 - Missing or invalid API Gateway `sourceIp` returns 400. Other methods return 405. Unexpected AWS SDK errors propagate to API Gateway.
@@ -17,7 +18,7 @@ The table name is supplied by `TABLE_NAME`. `IP_HASH_SECRET` is required at Lamb
 
 ## Counting limits and privacy
 
-This is an approximate portfolio metric. People behind shared NAT or carrier-grade NAT may be counted as one visitor. VPN changes and mobile IP rotation can count one person more than once. Bots and crawlers that run JavaScript can be counted. The API remains public and unauthenticated, so it is not abuse protection.
+This is approximate IP-based visitor deduplication, not an exact count of unique people. The total preserves historical counts from the previous implementation. People behind shared NAT or carrier-grade NAT may be counted as one visitor. VPN changes and mobile IP rotation can count one person more than once. Bots and crawlers that run JavaScript can be counted. The API remains public and unauthenticated, so it is not abuse protection.
 
 Raw IP addresses are not stored or logged by this handler. HMAC hashing reduces exposure but does not remove privacy concerns: hashed IPs may still be personal data under some regimes. DynamoDB TTL removes the digest records after expiry, with deletion commonly delayed by 24–48 hours.
 

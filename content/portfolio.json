@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "metadata": {
-    "last_updated": "2026-09-15",
+    "last_updated": "2026-11-04",
     "purpose": "Canonical approved portfolio content shared by the website and assistant knowledge build.",
     "approved_sources": [
       "profile",
@@ -214,7 +214,7 @@
       "repositoryUrl": "https://github.com/Jeysibn/cloud-resume-challenge",
       "liveUrl": "https://jeysibn.dev/",
       "preview": {
-        "summary": "This site on AWS: React served from CloudFront and private S3, with a Lambda and DynamoDB visitor counter.",
+        "summary": "This site on AWS: React served from CloudFront and private S3, with approximate IP-based visitor deduplication through Lambda and DynamoDB.",
         "primaryOutcome": "Rebuilt the console-built V1 in Terraform; GitHub Actions tests every change and deploys through OIDC.",
         "flow": {
           "label": "CloudFront → API Gateway → Lambda → DynamoDB",
@@ -224,7 +224,7 @@
             "LAMBDA",
             "DATA"
           ],
-          "accessible": "CloudFront serves the React website from private S3; the browser calls API Gateway, which invokes Lambda to read or update DynamoDB."
+          "accessible": "CloudFront serves the React website from private S3; the browser registers a visit with API Gateway, which invokes Lambda to deduplicate an IP-derived identifier and update DynamoDB."
         },
         "technologies": [
           "AWS",
@@ -235,16 +235,19 @@
         ]
       },
       "details": {
-        "summary": "Version 2 is live at jeysibn.dev. A React and TypeScript portfolio served through private Amazon S3 and CloudFront, with a Python Lambda visitor counter behind API Gateway and DynamoDB persistence. V1 was built manually in an older AWS project that is now closed; V2 is managed through Terraform.",
+        "summary": "Version 2 is live at jeysibn.dev. A React and TypeScript portfolio served through private Amazon S3 and CloudFront, with approximate IP-based visitor deduplication through API Gateway, Python Lambda, and DynamoDB. The total retains historical counts from the previous counter implementation. V1 was built manually in an older AWS project that is now closed; V2 is managed through Terraform.",
         "purpose": "Build a real, understandable serverless AWS deployment, then demonstrate the transition from manual console provisioning to reproducible infrastructure and controlled CI/CD.",
         "outcomes": [
           "Delivered the portfolio over HTTPS from CloudFront using Origin Access Control to keep the S3 website bucket private.",
-          "Connected an explicit visitor action to API Gateway, Python Lambda, and DynamoDB; confirmed the count persists across refreshes.",
+          "Implemented automatic visitor registration through API Gateway, Python Lambda, and DynamoDB. The backend uses HMAC-SHA256 digests for IPv4 addresses and IPv6 /64 prefixes and deduplicates each identifier within the configured 24-hour window.",
           "Defined V2 AWS infrastructure in Terraform with separate remote state, allowing changes to be reviewed as plans.",
           "Added GitHub Actions pull-request checks and OIDC-based frontend deployment on manual workflow dispatch after merge."
         ],
         "highlights": [
-          "GET /visits reads the current count; POST /visits records a button click. A page view alone does not increment the count.",
+          "When the visitor-counter component mounts, React sends POST /visits. Lambda derives an HMAC-SHA256 digest from the source IPv4 address or IPv6 /64 prefix.",
+          "A DynamoDB transaction records the digest and increments the existing count only if that identifier has no active 24-hour record. Repeated visits within the window do not increment the count; TTL expires digest records.",
+          "GET /visits reads the current count and is the frontend fallback if registration fails. The total preserves historical counts. This is approximate IP-based visitor deduplication, not an exact count of unique people.",
+          "Shared NAT or carrier-grade NAT may combine visitors; VPN or mobile IP changes may count one person more than once. Bots that run JavaScript may also be counted.",
           "API Gateway HTTP API invokes a Python 3.14 Lambda function with narrow DynamoDB permissions.",
           "CloudFront serves the Vite production build from a private S3 bucket through OAC; custom domain is jeysibn.dev.",
           "GitHub Actions runs frontend typecheck, lint, unit tests and build; backend CI runs Python tests, syntax checks and package validation.",
@@ -303,11 +306,12 @@
             "id": "portfolio-runtime",
             "title": "AWS runtime architecture",
             "svg": "/architecture/portfolio/runtime.svg",
-            "description": "AWS V2 flow: a visitor loads the React site from CloudFront and private S3; API Gateway invokes Python Lambda for the DynamoDB visitor counter.",
+            "description": "AWS V2 flow: the visitor-counter component automatically registers on mount. API Gateway invokes Python Lambda to HMAC-hash an IPv4 address or IPv6 /64 prefix and atomically deduplicate it in DynamoDB.",
             "summary": [
               "CloudFront serves the React and TypeScript build from a private S3 bucket via Origin Access Control over HTTPS.",
-              "The browser reads GET /visits and sends POST /visits only when a visitor clicks Record My Visit.",
-              "API Gateway invokes the Python Lambda function, which reads or updates the DynamoDB count. CloudWatch stores Lambda logs."
+              "When the counter component mounts, React sends POST /visits; GET /visits reads the current count and is used if registration fails.",
+              "Lambda derives an HMAC-SHA256 digest from IPv4 or IPv6 /64 source addresses. DynamoDB atomically records a digest and increments the counter only once per configured 24-hour window; TTL expires digest records.",
+              "The counter is approximate IP-based deduplication, not a count of unique people. Its total preserves historical counts from the previous implementation. CloudWatch stores Lambda logs."
             ]
           },
           {
@@ -329,8 +333,8 @@
         "experience_boundary": "This is a personal learning project, not professional employment experience or a high-scale production service.",
         "architecture": {
           "frontend": "React, TypeScript and Vite production build hosted in a private Amazon S3 bucket. Amazon CloudFront serves it via Origin Access Control at https://jeysibn.dev/.",
-          "backend": "API Gateway HTTP API routes GET and POST /visits to a Python 3.14 AWS Lambda handler; GET reads and POST conditionally increments the counter.",
-          "state": "Amazon DynamoDB stores one item keyed by id=visitors with a numeric count. Terraform provisions the table; the initial item is configured separately.",
+          "backend": "API Gateway HTTP API routes GET and POST /visits to a Python 3.14 AWS Lambda handler. The React visitor-counter component sends POST automatically on mount; GET reads the current count and is the fallback if registration fails.",
+          "state": "Amazon DynamoDB stores the existing count item and temporary HMAC-SHA256 visitor digests. A transaction records an IPv4 address or IPv6 /64 prefix digest and increments the count only if that identifier has not been registered within the configured 24-hour window. TTL expires digest records; the count preserves historical totals from the previous implementation.",
           "infrastructure": "Terraform manages V2 resources in ap-southeast-2 and uses separate remote S3 state. V1 state from the closed manual project is not reused.",
           "delivery": "GitHub Actions validates frontend changes on pull requests. After merge, a manually dispatched frontend workflow authenticates using AWS OIDC, uploads assets then index.html to S3, and invalidates CloudFront. Backend CI runs tests, syntax checks and ZIP checks; Lambda deployment is manual through Terraform.",
           "observability": "Amazon CloudWatch Lambda logs support verifying requests and troubleshooting. The project does not claim full application-wide telemetry or automated alerting.",
@@ -345,10 +349,10 @@
         "ci_cd": "Frontend CI checks typecheck, lint, unit tests and build for pull requests. Manual GitHub Actions workflow deploys frontend after merge using AWS OIDC. Backend CI validates Python source and ZIP; Lambda updates deploy manually through Terraform.",
         "infrastructure": "Private Amazon S3 website bucket, CloudFront with OAC and custom domain, API Gateway HTTP API, Python AWS Lambda, DynamoDB, CloudWatch, Terraform and GitHub Actions in AWS ap-southeast-2.",
         "observability": "CloudWatch logs provide basic evidence that Lambda processed counter requests and help diagnose errors.",
-        "data_storage": "DynamoDB holds the counter, which reflects recorded button clicks rather than unique visitors or ordinary page views.",
+        "data_storage": "DynamoDB stores the cumulative counter and expiring HMAC-SHA256 digests derived from source IPv4 addresses or IPv6 /64 prefixes. A transaction increments the counter once per IP-derived identifier within the configured 24-hour window, and TTL expires the digest records. The counter preserves historical totals and represents approximate IP-based visitor deduplication, not unique people.",
         "engineering_decisions": [
           "Built V1 manually to understand AWS services before rebuilding the same core system as Terraform-managed V2.",
-          "Kept counter reads separate from explicit POST recording to avoid inflating the count when pages refresh.",
+          "Automatically registered on visitor-counter mount and made POST idempotent per IP-derived digest and configured 24-hour window; GET remains a read-only fallback if registration fails.",
           "Reserved frontend deployment for a manual post-merge action and backend deployment for manual review of a Terraform plan."
         ],
         "operational_lessons": [
@@ -357,22 +361,23 @@
           "Read-only GET smoke checks do not mutate live counter data; POST tests do."
         ],
         "limitations": [
-          "The counter counts button clicks, not unique visitors, and the public API endpoints are unauthenticated.",
-          "CORS and a frontend click lock are not backend authorization or protection from scripted requests.",
+          "The counter is approximate IP-based deduplication, not an exact count of unique people. Shared NAT or carrier-grade NAT can undercount; VPN, mobile IP rotation, and other address changes can overcount. The public API is unauthenticated.",
+          "HMAC digests avoid storing raw source IP addresses, but may still raise privacy concerns. TTL expiration is asynchronous; transaction conditions enforce the configured window before expired digest records are physically deleted.",
+          "CORS is not backend authorization or protection from scripted requests.",
           "The V1 AWS environment is closed and not live.",
           "Backend Lambda updates are not automatically deployed from GitHub Actions."
         ],
         "claims_not_to_make": [
           "Do not claim that the site is still hosted on GitHub Pages or that Azure Functions/Cosmos DB power its current visitor counter.",
           "Do not claim the V1 AWS project is live or that the V2 backend is auto-deployed on merge.",
-          "Do not call the recorded click count a count of unique visitors.",
+          "Do not describe approximate IP-based deduplication as an exact count of unique people.",
           "Do not describe the project as commercial/high-scale production or claim AWS credentials are stored in the frontend."
         ],
         "source": {
           "id": "project-aws-cloud-resume-challenge",
           "label": "AWS Cloud Resume Challenge",
           "url": "https://github.com/Jeysibn/cloud-resume-challenge",
-          "last_verified": "2026-11-01"
+          "last_verified": "2026-11-04"
         }
       }
     },
