@@ -116,6 +116,9 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Install backend test dependencies
+        run: python3 -m pip install -r backend/requirements-test.txt
+
       - name: Run backend unit tests
         run: python3 -m unittest discover -s backend/tests -v
 

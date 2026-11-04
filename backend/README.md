@@ -26,12 +26,13 @@ Raw IP addresses are not stored or logged by this handler. HMAC hashing reduces 
 From the repository root:
 
 ```bash
+python3 -m pip install -r backend/requirements-test.txt
 python3 -m unittest discover -s backend/tests -v
 python3 -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py
 python3 backend/lambda-v2/package.py
 ```
 
-The V2 tests mock boto3, so they do not need AWS credentials or contact AWS. The packaging script creates `backend/lambda-v2/function.zip` with `lambda_function.py` at the archive root and verifies the ZIP. The ZIP is generated locally and ignored by Git. Rebuild it after editing the handler and before Terraform plan or apply.
+The V2 handler tests use mocks for behavior checks and botocore `Stubber` for DynamoDB request-shape validation. They do not contact AWS. The packaging script creates `backend/lambda-v2/function.zip` with `lambda_function.py` at the archive root and verifies the ZIP. The ZIP is generated locally and ignored by Git. Rebuild it after editing the handler and before Terraform plan or apply.
 
 ## Version 1 source history
 

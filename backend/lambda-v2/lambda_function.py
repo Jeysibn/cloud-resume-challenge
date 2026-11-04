@@ -9,6 +9,7 @@ import boto3
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(os.environ["TABLE_NAME"])
+dynamodb_client = boto3.client("dynamodb")
 ip_hash_secret = os.environ["IP_HASH_SECRET"].encode("utf-8")
 visit_ttl_seconds = int(os.environ.get("VISIT_TTL_SECONDS", "86400"))
 if visit_ttl_seconds <= 0:
@@ -89,8 +90,8 @@ def lambda_handler(event, context):
         }
 
         try:
-            table.meta.client.transact_write_items(**transaction)
-        except table.meta.client.exceptions.TransactionCanceledException as error:
+            dynamodb_client.transact_write_items(**transaction)
+        except dynamodb_client.exceptions.TransactionCanceledException as error:
             reasons = error.response.get("CancellationReasons", [])
             if reasons and reasons[0].get("Code") == "ConditionalCheckFailed":
                 count = current_count()
