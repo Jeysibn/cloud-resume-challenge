@@ -10,12 +10,14 @@ Vite embeds this value in the built JavaScript. For local development, copy `.en
 
 ## How the counter behaves
 
-- On page load, the website sends `GET /visits` to read the current count.
-- It sends `POST /visits` only after the visitor clicks **Record My Visit**.
-- A successful POST is followed by GET so the page displays the latest count.
-- Failed reads can be retried. POST is not retried automatically because the server may already have incremented the count.
+- On page load, the website sends one `POST /visits` and displays the returned count. React StrictMode effect replay shares the same in-flight registration.
+- Lambda counts the source IP once per 24-hour window. It groups IPv6 addresses by `/64`, stores only an HMAC-SHA256 digest, and returns whether this request incremented the total.
+- If POST fails, the website falls back to `GET /visits` to display the current count. **Retry** only repeats this GET.
+- The POST is idempotent per IP and TTL window, so clients may safely retry it. The frontend does not automatically retry it.
 
-The counter counts recorded clicks, not unique visitors. The click lock helps prevent accidental repeated clicks in one page view; it is not authentication or abuse protection.
+This approximates unique public IPs per 24-hour window, not people. Shared NAT/CGNAT can undercount, while VPN or mobile IP rotation can overcount. Bots and crawlers that run JavaScript can be counted. The API remains public and unauthenticated, so it is not abuse protection.
+
+The handler does not store or log raw IPs. HMAC hashes still raise privacy concerns and may remain personal data under some regimes. DynamoDB TTL deletes digest records after expiry, typically within 24–48 hours; the transaction checks `expires_at` so late TTL cleanup does not delay recounting.
 
 ## Local checks
 

@@ -8,6 +8,8 @@ This guide publishes frontend files to the existing V2 website. It does not crea
 2. Open a pull request to `main`. GitHub Actions runs the frontend checks; the AWS deploy job is skipped for pull requests.
 3. Merge the pull request only after its checks pass.
 
+For a visitor-counter API change, deploy the backend through Terraform first, then deploy the frontend. The new frontend expects the backend's `{counted, count}` POST response.
+
 ## Start a deployment
 
 1. Open the repository’s **Actions** tab on GitHub.
@@ -25,7 +27,7 @@ Wait for both workflow jobs to pass. Then open the [live site](https://jeysibn.d
 curl -i https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com/visits
 ```
 
-Expect HTTP 200 and JSON containing a numeric `count`. This GET does not change the count. A POST increments the real counter; do not send one just to test deployment.
+Expect HTTP 200 and JSON containing a numeric `count`. This GET does not change the count. A POST may increment the real counter once per source IP during the 24-hour window; do not send one just to test deployment.
 
 CloudFront invalidation can take time to finish propagating after the workflow succeeds. If the page still looks old, check the invalidation and wait before starting another deployment.
 
