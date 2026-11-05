@@ -215,7 +215,7 @@
       "liveUrl": "https://jeysibn.dev/",
       "preview": {
         "summary": "This site on AWS: React served from CloudFront and private S3, with approximate IP-based visitor deduplication through Lambda and DynamoDB.",
-        "primaryOutcome": "Rebuilt the console-built V1 in Terraform; GitHub Actions tests every change and deploys through OIDC.",
+        "primaryOutcome": "Rebuilt V1 with Terraform; added beginner guides for setup, architecture, and deployment.",
         "flow": {
           "label": "CloudFront → API Gateway → Lambda → DynamoDB",
           "nodes": [
@@ -241,7 +241,8 @@
           "Delivered the portfolio over HTTPS from CloudFront using Origin Access Control to keep the S3 website bucket private.",
           "Implemented automatic visitor registration through API Gateway, Python Lambda, and DynamoDB. The backend uses HMAC-SHA256 digests for IPv4 addresses and IPv6 /64 prefixes and deduplicates each identifier within the configured 24-hour window.",
           "Defined V2 AWS infrastructure in Terraform with separate remote state, allowing changes to be reviewed as plans.",
-          "Added GitHub Actions pull-request checks and OIDC-based frontend deployment on manual workflow dispatch after merge."
+          "Added GitHub Actions pull-request checks and OIDC-based frontend deployment on manual workflow dispatch after merge.",
+          "Reorganized the documentation for new contributors, with a reading path for local setup, architecture, testing, and deployment."
         ],
         "highlights": [
           "When the visitor-counter component mounts, React sends POST /visits. Lambda derives an HMAC-SHA256 digest from the source IPv4 address or IPv6 /64 prefix.",
@@ -249,6 +250,7 @@
           "GET /visits reads the current count and is the frontend fallback if registration fails. The total preserves historical counts. This is approximate IP-based visitor deduplication, not an exact count of unique people.",
           "Shared NAT or carrier-grade NAT may combine visitors; VPN or mobile IP changes may count one person more than once. Bots that run JavaScript may also be counted.",
           "API Gateway HTTP API invokes a Python 3.14 Lambda function with narrow DynamoDB permissions.",
+          "The Lambda role uses table-scoped GetItem, PutItem, and UpdateItem permissions. DynamoDB authorizes the transaction through its individual Put and Update operations.",
           "CloudFront serves the Vite production build from a private S3 bucket through OAC; custom domain is jeysibn.dev.",
           "GitHub Actions runs frontend typecheck, lint, unit tests and build; backend CI runs Python tests, syntax checks and package validation.",
           "Frontend releases are manually triggered through GitHub Actions with temporary OIDC credentials; backend Lambda deployment is manual through a reviewed Terraform plan.",
@@ -328,7 +330,7 @@
         ]
       },
       "knowledge": {
-        "purpose": "AWS Cloud Resume Challenge V2: a working portfolio demonstrating serverless AWS architecture, Terraform-managed infrastructure, verified API integration, and GitHub Actions CI with manually controlled releases.",
+        "purpose": "AWS Cloud Resume Challenge V2: a working portfolio demonstrating serverless AWS architecture, Terraform-managed infrastructure, verified API integration, GitHub Actions CI with manually controlled releases, and beginner-oriented project documentation.",
         "status_detail": "Version 2 is live at https://jeysibn.dev/. Version 1 was manually built in an older AWS project that is now closed; its resources are not the live site.",
         "experience_boundary": "This is a personal learning project, not professional employment experience or a high-scale production service.",
         "architecture": {
@@ -343,7 +345,7 @@
         "security_decisions": [
           "S3 website bucket is private and accessed by CloudFront through Origin Access Control.",
           "GitHub Actions assumes a restricted AWS role using short-lived OIDC credentials instead of long-lived AWS access keys.",
-          "Lambda has scoped DynamoDB IAM permissions; Terraform keeps separate V2 state.",
+          "Lambda has table-scoped DynamoDB GetItem, PutItem, and UpdateItem permissions; those actions authorize the corresponding reads and writes inside its transaction.",
           "API Gateway CORS restricts browser origins but is not authentication or abuse protection."
         ],
         "ci_cd": "Frontend CI checks typecheck, lint, unit tests and build for pull requests. Manual GitHub Actions workflow deploys frontend after merge using AWS OIDC. Backend CI validates Python source and ZIP; Lambda updates deploy manually through Terraform.",
@@ -353,7 +355,8 @@
         "engineering_decisions": [
           "Built V1 manually to understand AWS services before rebuilding the same core system as Terraform-managed V2.",
           "Automatically registered on visitor-counter mount and made POST idempotent per IP-derived digest and configured 24-hour window; GET remains a read-only fallback if registration fails.",
-          "Reserved frontend deployment for a manual post-merge action and backend deployment for manual review of a Terraform plan."
+          "Reserved frontend deployment for a manual post-merge action and backend deployment for manual review of a Terraform plan.",
+          "Organized the documentation around a beginner reading path and separated current local validation from historical live AWS evidence."
         ],
         "operational_lessons": [
           "Private S3 and CloudFront OAC secure static origin access without exposing the bucket.",
