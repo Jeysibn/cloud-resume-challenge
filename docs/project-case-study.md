@@ -43,7 +43,7 @@ I configured API Gateway CORS to allow the portfolio's custom domain (and the Cl
 
 I used DynamoDB to store the visitor counter value and temporary IP-derived digest records. TTL expires the digest records, while the existing total preserves historical counts from the previous implementation.
 
-The Lambda execution role has scoped DynamoDB permissions for `GetItem`, `PutItem`, and `UpdateItem` on the visitor table.
+Terraform gives the Lambda role scoped `GetItem`, `PutItem`, and `UpdateItem` access to the visitor table. DynamoDB checks those item permissions for the corresponding reads and writes inside a transaction.
 
 This allows the visitor count to remain saved even when the website is refreshed.
 
@@ -75,19 +75,15 @@ I also implemented GitHub OIDC authentication, allowing GitHub Actions to use te
 
 For backend changes, I run tests and manually deploy the updated Lambda package using Terraform.
 
-## 5. End-to-End Testing
+## 5. End-to-end testing
 
-I tested the application using the deployed AWS environment.
+Historical live testing checked the previous button-based counter. It confirmed that a POST changed the DynamoDB count and produced a CloudWatch record, but it does not verify the current automatic registration or IP-based deduplication.
 
-In the historical live test, the previous counter displayed 0 before the manual increment.
+The current counter registers when its component loads and counts an IP-derived identifier at most once within a 24-hour window. This estimates visitors, not individual people. Shared networks can combine visitors, while changing addresses can count one person more than once. The aggregate retains the previous counter total.
 
-The previous counter implementation was manually incremented during historical validation. The current implementation automatically registers on component mount and deduplicates repeated requests from the same IP-derived identifier within the configured 24-hour window.
+See the [validation record](validation.md#live-aws-evidence-from-november-1-2026) for the dated results and screenshots.
 
-Earlier live testing verified that DynamoDB stored the counter and CloudWatch recorded a POST request. Those checks predate IP-based deduplication and do not validate the current behavior. The current count is approximate IP-based visitor deduplication, not an exact count of unique people; shared networks can combine visitors and changing addresses can count one person more than once. The aggregate retains historical counts from the previous implementation.
-
-See the [validation record](validation.md#mission-91--visitor-counter-end-to-end-test) for the test results and screenshots.
-
-## 6. Challenges and Lessons Learned
+## 6. Challenges and lessons learned
 
 One of the key learning areas was understanding how different AWS services communicate.
 

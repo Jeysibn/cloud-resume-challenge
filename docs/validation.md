@@ -1,10 +1,10 @@
-# Validation and current status
+# Validation record
 
-This page distinguishes local checks from live AWS checks. The unique-IP counter change is validated locally; no AWS resources or live API were accessed during its implementation.
+This page records which checks passed and what they covered. Local checks below were recorded on November 4, 2026. They do not confirm that the current visitor-counter code works in live AWS.
 
-## Local checks for the current source
+## Local checks recorded on November 4, 2026
 
-The following checks passed locally on November 4, 2026:
+The checks ran from the repository root unless a command changes directories:
 
 ```bash
 python3 -m unittest discover -s backend/tests -v
@@ -20,69 +20,35 @@ terraform fmt -check
 terraform validate
 ```
 
+Recorded results:
+
 | Check | Result |
 | --- | --- |
-| `python3 -m unittest discover -s backend/tests -v` | Passed: 27 tests, including V1 source tests; AWS calls are mocked |
-| Python compilation and Lambda ZIP packaging | Passed; ZIP contains `lambda_function.py` at the root |
+| Backend unit tests | Passed: 27 tests, including V1 source tests; AWS calls were mocked |
+| Python compilation and Lambda ZIP packaging | Passed; the ZIP contained `lambda_function.py` at its root |
 | Frontend typecheck and lint | Passed |
-| `npm test -- --run` | Passed: 73 tests in 16 files |
+| Frontend unit tests | Passed: 73 tests across 16 files |
 | Frontend production build | Passed |
-| `terraform fmt -check` and `terraform validate` | Passed |
+| Terraform format check and validation | Passed |
 
-Backend and frontend tests use mocks and do not modify AWS or the live counter. Terraform validation checks configuration; it does not deploy anything. The unique-IP implementation has not been smoke-tested against AWS yet.
+The frontend and backend tests used mocks and did not update AWS. Terraform validation checked the configuration but did not deploy it. These results are a dated snapshot, so rerun the checks for the current source before relying on them.
 
-## Previous live validation (historical behavior)
+## Live AWS evidence from November 1, 2026
 
-The following evidence predates the unique-IP change and validated the former **Record My Visit** button flow. It does not prove the current automatic registration, IP-derived deduplication, or TTL behavior. The current implementation retains the previous counter's aggregate total; no live POST was sent as part of the documentation update.
+These live checks tested the previous button-based counter. They do not verify the current automatic registration, IP-based deduplication, or TTL behavior. The current counter change has not been smoke-tested against AWS in this record.
 
-### Mission 9.1 — Previous Visitor Counter End-to-End Test
+The historical test opened [jeysibn.dev](https://jeysibn.dev), clicked **Record My Visit**, observed the count increase from 1 to 2, and refreshed the page. The test also checked the DynamoDB item and CloudWatch request record. It changed the production counter and is evidence for the old behavior only.
 
-**Date:** November 1, 2026
+![Portfolio footer showing a recorded visit](images/testing/visitor-counter-frontend.jpg)
 
-**Environment:** AWS V2 (`ap-southeast-2`, Sydney)
+![CloudWatch record for a successful POST /visits request](images/testing/api-post-visit-response.png)
 
-**Result:** PASS for the button-click counter then deployed
+![DynamoDB visitor counter item](images/testing/dynamodb-visitor-count.png)
 
-The earlier test clicked **Record My Visit**, observed the count increase by one, confirmed the DynamoDB count, and refreshed the page. Those results describe the old behavior only. Current POST registration is automatic on component mount; repeated requests from the same IP-derived identifier do not increment the count again within the configured 24-hour window. Current AWS behavior has not been live-verified in this record.
+## Dependency audit recorded on November 1, 2026
 
-Screenshots from the prior live test:
-
-![Portfolio footer showing one recorded visit](images/testing/visitor-counter-frontend.jpg)
-
-![CloudWatch record for the successful POST /visits request](images/testing/api-post-visit-response.png)
-
-![DynamoDB visitor counter item with count 1](images/testing/dynamodb-visitor-count.png)
-
-The old live checks reported the homepage and GET endpoint working and had no production POST during the initial deployment. The November 1 button test later sent a production POST. No current live API check has been performed for the unique-IP change.
-
-### Custom domain and follow-up counter check
-
-**Date:** November 1, 2026
-
-**Environment:** AWS V2 (`ap-southeast-2`, Sydney)
-
-**Result:** PASS for the prior button-click implementation
-
-The portfolio was opened successfully at [https://jeysibn.dev](https://jeysibn.dev). A follow-up live test clicked **Record My Visit** and increased the count from 1 to 2. This is historical production evidence for the prior implementation, not validation of the unique-IP behavior.
-
-The CloudFront distribution remains the delivery layer behind the custom domain.
-
-### Custom domain and follow-up counter check
-
-**Date:** November 1, 2026
-
-**Environment:** AWS V2 (`ap-southeast-2`, Sydney)
-
-**Result:** PASS
-
-The portfolio was opened successfully at [https://jeysibn.dev](https://jeysibn.dev). In a follow-up historical test of the prior button-based implementation, clicking **Record My Visit** increased the counter from 1 to 2. This live production update is not an automated CI test and does not validate the current unique-IP behavior.
-
-The CloudFront distribution remains the delivery layer behind the custom domain. The custom domain is the URL to share publicly.
-
-## Dependency audit
-
-The latest recorded `npm audit` on 2026-11-01 found 12 moderate issues in development tooling; `npm audit --omit=dev` found none in production dependencies. See the [dependency security check](../frontend/app/DEPENDENCY-SECURITY-REVIEW.md) for details and recheck commands. This audit is separate from the build and test results above.
+The recorded `npm audit` reported 12 moderate findings in development dependencies. `npm audit --omit=dev` reported none in production dependencies. Advisory data changes over time; see the [dependency security check](../frontend/app/DEPENDENCY-SECURITY-REVIEW.md) for commands to run a fresh audit.
 
 ## Version 1 history
 
-V1 was manually deployed in an older AWS project that is now closed. Its 2026-10-30 tests and observations are historical; they are not proof of current V2 behavior. See [architecture](architecture.md) for the current system and V1 distinction.
+V1 was manually deployed in an AWS project that is now closed. Its tests and observations are historical and do not describe the current V2 system. See the [architecture guide](architecture.md) for the distinction between V1 and V2.

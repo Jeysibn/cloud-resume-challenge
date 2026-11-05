@@ -1,13 +1,13 @@
 # Backend CI and manual Lambda deployment (V2)
 
-This is an entry-level learning project. GitHub checks backend changes on pull requests; backend deployment remains a manual Terraform operation.
+This guide explains how GitHub checks backend changes and how to deploy the Lambda function with Terraform. Backend deployment is manual and can change live AWS resources.
 
 ## The flow
 
 ```text
 Edit Python code → Open pull request → GitHub runs backend tests
-       → Merge to main → Set IP_HASH_SECRET → Build Lambda ZIP
-       → Review Terraform plan → Manually apply → Deploy frontend
+       → Merge to main → Keep IP_HASH_SECRET stable → Build Lambda ZIP
+       → Review Terraform plan → Apply the approved plan → Deploy frontend
 ```
 
 The `Backend CI (Python 3.14)` job in `.github/workflows/deploy-v2.yml` runs Python tests without AWS, checks syntax, and builds the Lambda ZIP. The frontend continues to use its separate manual S3/CloudFront workflow.
@@ -59,7 +59,7 @@ Use this after merging the tested backend code into `main`. Use a clean local ch
    terraform show .terraform/lambda.tfplan
    ```
 
-   Expect only in-place changes to `aws_dynamodb_table.visitors` (enabling TTL for `expires_at`), `aws_iam_role_policy.lambda` (adding `dynamodb:PutItem`), and `aws_lambda_function.visitor` (environment variables and code ZIP). The existing `visitors` counter item is preserved. Stop if the plan proposes deleting, replacing, or changing unrelated resources.
+   Review each proposed change. DynamoDB authorizes each operation inside a transaction through its item action. This handler uses `Put` and `Update`, which require `dynamodb:PutItem` and `dynamodb:UpdateItem`; the Lambda role already has both on the visitor table. The plan may update the Lambda ZIP or environment. The existing `visitors` counter item is initialized outside Terraform and should be preserved. Stop if the plan proposes deleting, replacing, or changing unrelated resources.
 
 5. Apply the reviewed plan:
 
