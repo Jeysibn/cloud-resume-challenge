@@ -24,7 +24,9 @@ async function stubPublicApi(page: import("@playwright/test").Page) {
       return;
     }
 
-    const body = method === "POST" ? { counted: true, count: 42 } : { count: 42 };
+    const body = method === "POST"
+      ? { counted: true, count: 42, returning: false }
+      : { count: 42, registrationSupported: true };
     await route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
   });
 }
@@ -87,7 +89,7 @@ test.describe("portfolio release browser gate", () => {
     await page.reload({ waitUntil: "networkidle" });
     await expect(page).toHaveScreenshot("hero-1920.png", {
       animations: "disabled",
-      mask: [page.locator(".system-status"), page.locator(".visitor-count")],
+      mask: [page.locator(".system-status")],
     });
   });
 
@@ -453,24 +455,50 @@ test.describe("mobile portfolio interactions", () => {
     await expectNoHorizontalOverflow(page);
   });
 
-  test("registers automatically and keeps the counter accessible", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /Ask this portfolio/ })).toHaveCount(0);
+  test("shows the public count in the hero without tracking before opt-in", async ({ page }) => {
     const counter = page.locator(".visitor-counter");
-    await expect(counter.getByRole("status")).toHaveText("Recorded visits · 42");
-    await expect(counter.getByRole("button", { name: "Record My Visit" })).toHaveCount(0);
-    expect(publicApiStubs.get(page)?.methods).toEqual(["POST"]);
+    await expect(counter.getByRole("status")).toHaveText("42 recorded visits");
+    await expect(counter).toBeVisible();
+    await expect(page.locator(".site-footer .visitor-counter")).toHaveCount(0);
+    await expect(counter.getByRole("button", { name: "Allow anonymous counting" })).toBeVisible();
+    expect(publicApiStubs.get(page)?.methods).toEqual(["GET"]);
     expect((await new AxeBuilder({ page }).include(".visitor-counter").analyze()).violations).toEqual([]);
   });
 
-  test("falls back to GET when automatic registration fails", async ({ page }) => {
+  test("keeps the hero counter readable and contained at representative widths", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.includes("mobile"), "Viewport sweep runs in one browser project");
+    for (const width of [320, 390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 844 });
+      const counter = page.locator(".visitor-counter");
+      await expect(counter).toBeVisible();
+      await expect(counter).toBeInViewport();
+      await expect(counter.getByRole("status")).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+      const inHero = await counter.evaluate((node) => Boolean(node.closest(".hero")));
+      expect(inHero).toBe(true);
+    }
+  });
+
+  test("registers only after opt-in, keeps a stable UUID and allows opt-out", async ({ page }) => {
+    const counter = page.locator(".visitor-counter");
+    await counter.getByRole("button", { name: "Allow anonymous counting" }).click();
+    await expect(counter.getByRole("button", { name: "Turn off visit counting" })).toBeVisible();
+    const visitorId = await page.evaluate(() => localStorage.getItem("jeysibn.visitor-id.v1"));
+    expect(visitorId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    await expect.poll(() => publicApiStubs.get(page)?.methods).toEqual(["GET", "GET", "POST"]);
+    await counter.getByRole("button", { name: "Turn off visit counting" }).click();
+    await expect(counter.getByRole("button", { name: "Enable anonymous counting" })).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("jeysibn.visitor-id.v1"))).toBeNull();
+  });
+
+  test("falls back to GET when an opted-in registration fails", async ({ page }) => {
     const stub = publicApiStubs.get(page)!;
     stub.methods.length = 0;
     stub.failNextPost = true;
-
-    await page.reload({ waitUntil: "domcontentloaded" });
-
-    await expect(page.locator(".visitor-counter").getByRole("status")).toHaveText("Recorded visits · 42");
-    expect(stub.methods).toEqual(["POST", "GET"]);
+    const counter = page.locator(".visitor-counter");
+    await counter.getByRole("button", { name: "Allow anonymous counting" }).click();
+    await expect(counter.getByRole("status")).toHaveText("42 recorded visits");
+    await expect.poll(() => stub.methods).toEqual(["GET", "GET", "POST", "GET"]);
     expect((await new AxeBuilder({ page }).include(".visitor-counter").analyze()).violations).toEqual([]);
   });
 

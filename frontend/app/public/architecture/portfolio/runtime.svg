@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="architecture-title architecture-desc">
   <title id="architecture-title">Runtime architecture</title>
-  <desc id="architecture-desc">CloudFront serves the React site from private Amazon S3 using Origin Access Control. When the visitor-counter component mounts, React automatically sends POST /visits to API Gateway. Python Lambda HMAC-SHA256 hashes IPv4 addresses and IPv6 /64 prefixes, then DynamoDB atomically records each digest and increments the existing counter only once per configured 24-hour window. GET /visits reads the count if registration fails. DynamoDB TTL expires digest records. The total retains historical counts and represents approximate IP-based visitor deduplication, not unique people. CloudWatch stores Lambda logs.</desc>
+  <desc id="architecture-desc">CloudFront serves the React site from private Amazon S3 using Origin Access Control. The counter reads the aggregate with GET /visits. Only after opt-in does the browser send a random UUID to API Gateway; Python Lambda stores an HMAC-SHA256 digest and atomically updates private browser history with the historical aggregate. Each valid visit refreshes a rolling 24-hour inactivity deadline. After 90 days without activity, the next registration starts fresh history even if asynchronous DynamoDB TTL cleanup has not removed the record. The total preserves earlier IP-based counts and is not a count of unique people. CloudWatch stores Lambda logs.</desc>
   <defs>
     <style>
       .title{font:600 51px system-ui, sans-serif;fill:#171912}
@@ -39,7 +39,7 @@
 <path class="edge" d="M372 334 H466"/>
 <path class="edge" d="M761 334 H855"/>
 <rect x="80" y="456" width="1440" height="305" rx="8" fill="none" stroke="#B8B2A6" stroke-width="2"/>
-<text x="100" y="487" class="tag">VISITOR COUNTER · AUTOMATIC IP-BASED REGISTRATION</text>
+<text x="100" y="487" class="tag">VISITOR COUNTER · OPT-IN BROWSER REGISTRATION</text>
 <rect x="110" y="531" width="270" height="135" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
 <rect x="110" y="531" width="7" height="135" rx="3" fill="#275D57"/>
 <text x="136" y="566" class="tag">GET / POST</text>
@@ -54,7 +54,7 @@
 <rect x="860" y="531" width="7" height="135" rx="3" fill="#275D57"/>
 <text x="886" y="566" class="tag">PERSISTENCE</text>
 <text x="886" y="607" class="name">DynamoDB</text>
-<text x="886" y="639" class="detail">Count + 24h digests</text>
+<text x="886" y="639" class="detail">Count + browser history</text>
 <rect x="1235" y="531" width="250" height="135" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
 <rect x="1235" y="531" width="7" height="135" rx="3" fill="#275D57"/>
 <text x="1261" y="566" class="tag">LOGS</text>
@@ -64,10 +64,10 @@
 <path class="edge" d="M759 599 H860"/>
 <path class="edge" d="M1140 599 H1235"/>
 <path class="edge" d="M241 397 V457 H245 V531"/>
-<text x="275" y="447" class="detail">Mount: POST · fallback GET</text>
-<text x="110" y="693" class="note">On mount, React sends POST /visits; GET /visits supplies the count if registration fails.</text>
-<text x="110" y="716" class="note">Lambda HMAC-SHA256 hashes IPv4 addresses and IPv6 /64 prefixes; DynamoDB atomically increments once per digest per configured 24-hour window.</text>
-<text x="110" y="739" class="note">TTL expires digest records. The total preserves historical counts; this is approximate IP-based deduplication, not a count of unique people.</text>
+<text x="275" y="447" class="detail">GET count · POST after opt-in</text>
+<text x="110" y="693" class="note">GET /visits displays the aggregate; POST /visits sends a UUID only after opt-in.</text>
+<text x="110" y="716" class="note">Lambda stores an HMAC digest; DynamoDB atomically updates browser history and the aggregate.</text>
+<text x="110" y="739" class="note">Rolling 24h activity, 90d history retention, delayed TTL cleanup. Total includes historical IP counts.</text>
 
   <line x1="80" y1="824" x2="1520" y2="824" stroke="#B8B2A6"/>
   <text x="80" y="855" class="note">jeysibn.dev · ap-southeast-2 · Terraform-managed V2</text>

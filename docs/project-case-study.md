@@ -10,7 +10,7 @@
 
 I built and deployed a personal portfolio website using AWS to gain hands-on experience with cloud infrastructure, serverless applications, and basic DevOps practices.
 
-The website displays my portfolio and automatically registers an approximate IP-based visitor count when the visitor-counter component loads.
+The website displays my portfolio and offers an opt-in anonymous browser visit counter.
 
 I divided the project into two versions. In Version 1, I manually configured AWS resources through the Management Console to understand how the services work. In Version 2, I recreated the infrastructure using Terraform and introduced GitHub Actions for automated code testing and frontend deployment.
 
@@ -32,8 +32,8 @@ I used AWS Lambda with Python to handle visitor counter requests without managin
 
 API Gateway exposes two endpoints:
 
-- `GET /visits` — retrieves the current count and serves as a fallback if registration fails.
-- `POST /visits` — automatically registers when the visitor-counter component mounts. Lambda derives an HMAC-SHA256 digest from the source IPv4 address or IPv6 `/64` prefix; a DynamoDB transaction records the digest and increments the existing count only if the identifier has not been registered within the configured 24-hour window.
+- `GET /visits` — retrieves the public aggregate count.
+- `POST /visits` — registers an opted-in browser using a random UUID v4. Lambda stores only an HMAC-SHA256 digest. Every valid registration refreshes a rolling 24-hour inactivity deadline; an eligible visit increments the aggregate atomically with the visitor record.
 
 Both API routes connect to the same Lambda function.
 
@@ -41,9 +41,9 @@ I configured API Gateway CORS to allow the portfolio's custom domain (and the Cl
 
 **Database — Amazon DynamoDB**
 
-I used DynamoDB to store the visitor counter value and temporary IP-derived digest records. TTL expires the digest records, while the existing total preserves historical counts from the previous implementation.
+I use DynamoDB for the aggregate and private anonymous-browser activity records. The `visitors` count preserves its historical value. Each browser record tracks first and latest activity, page registrations, counted visits, and return status. Application-controlled `active_until` determines counting eligibility; a separate 90-day `expires_at` value drives asynchronous DynamoDB TTL cleanup.
 
-Terraform gives the Lambda role scoped `GetItem`, `PutItem`, and `UpdateItem` access to the visitor table. DynamoDB checks those item permissions for the corresponding reads and writes inside a transaction.
+The Lambda execution role has table-scoped `GetItem`, `PutItem`, and `UpdateItem` permissions for the aggregate and browser records.
 
 This allows the visitor count to remain saved even when the website is refreshed.
 
@@ -75,15 +75,15 @@ I also implemented GitHub OIDC authentication, allowing GitHub Actions to use te
 
 For backend changes, I run tests and manually deploy the updated Lambda package using Terraform.
 
-## 5. End-to-end testing
+## 5. End-to-End Testing
 
-Historical live testing checked the previous button-based counter. It confirmed that a POST changed the DynamoDB count and produced a CloudWatch record, but it does not verify the current automatic registration or IP-based deduplication.
+Historical live testing verified the former manual counter. It is evidence for the old behavior only, not for the current browser-ID registration or rolling window.
 
-The current counter registers when its component loads and counts an IP-derived identifier at most once within a 24-hour window. This estimates visitors, not individual people. Shared networks can combine visitors, while changing addresses can count one person more than once. The aggregate retains the previous counter total.
+The current implementation defaults tracking to off and reads the aggregate without registration. After opt-in, the browser stores a random UUID and the server stores an HMAC digest with a 90-day logical inactivity-retention deadline. A request after that deadline starts a fresh visitor-history period even if DynamoDB has not yet deleted the expired item. The browser ID remains in first-party storage until opt-out or site-data clearing. Browser identifiers can be cleared, copied, or spoofed; they do not identify people. The preserved aggregate spans the former IP-based and new browser-based methods, so it is not a historical unique-browser count.
 
-See the [validation record](validation.md#live-aws-evidence-from-november-1-2026) for the dated results and screenshots.
+See the [validation record](validation.md#live-aws-evidence-from-november-1-2026) for historical live-test screenshots and the current local checks.
 
-## 6. Challenges and lessons learned
+## 6. Challenges and Lessons Learned
 
 One of the key learning areas was understanding how different AWS services communicate.
 

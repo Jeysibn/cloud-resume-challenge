@@ -31,7 +31,7 @@ This page helps you find the right guide and understand the project vocabulary. 
 - **Terraform:** a tool that describes AWS resources in files. A plan previews changes before Terraform applies them.
 - **GitHub Actions:** GitHub's automation service. It checks pull requests and can deploy the frontend when manually started on `main`.
 - **OIDC:** OpenID Connect, a way for GitHub Actions to request temporary AWS credentials without storing long-lived AWS keys in the repository.
-- **TTL:** time to live. DynamoDB removes expired digest records asynchronously; the handler checks their expiry time directly so delayed cleanup does not extend the counting window.
+- **TTL:** time to live. `active_until` controls the 24-hour counting window; `expires_at` controls the 90-day history-retention deadline and DynamoDB's asynchronous physical deletion. A still-present logically expired browser record is reset on its next registration.
 - **V1 and V2:** V1 is the retired deployment. V2 is the current live system. Do not reuse V1 AWS resources or Terraform state.
 
 ## Safety when learning

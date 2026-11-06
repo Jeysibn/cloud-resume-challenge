@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import type { ThemeOrigin } from "../hooks";
 import type { ThemePreference } from "../portfolio";
-import { VisitorCounter } from "./VisitorCounter";
 import { JiMark } from "./hero/Monogram";
 
 /**
@@ -115,7 +114,6 @@ export function SiteFooter() {
     <footer className="site-footer">
       <p className="footer-brand">JEYSIBN · Jerome Christian Ibon</p>
       <p>React + TypeScript</p>
-      <VisitorCounter />
     </footer>
   );
 }

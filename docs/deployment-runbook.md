@@ -8,9 +8,15 @@ This guide publishes frontend files to the existing V2 website. It does not crea
 2. Open a pull request to `main`. GitHub Actions runs the frontend checks; the AWS deploy job is skipped for pull requests.
 3. Merge the pull request only after its checks pass.
 
-For a visitor-counter API change, deploy the backend through Terraform first, then deploy the frontend. The new frontend expects the backend's `{counted, count}` POST response.
+For a visitor-counter API change, first back up/recoverably record the existing table/state and aggregate count. Review the Terraform plan and deploy the compatible backend before the frontend. `GET /visits` returns `{ count, registrationSupported: true }`; enhanced clients send `POST /visits` with `{ "visitorId": "<UUID v4>" }` only after consent and capability detection, receiving `{ counted, count, returning }`. Older clients can keep displaying the aggregate: their bodyless POST receives `{ counted: false, count }` without registration. Enhanced clients talking to an older backend use GET only because the capability flag is absent. Both mixed-version cases have a temporary registration gap and never silently fall back to IP-derived tracking on the enhanced backend/client.
 
 ## Start a deployment
+
+### Workflow and AWS access boundary
+
+Merging a pull request to `main` does not deploy AWS resources: **V2 Portfolio CI/CD** runs checks for pull requests and has a separate `workflow_dispatch` trigger. Its deploy job runs only for a manual dispatch on `main`; rerunning such a `main` dispatch can publish again. The job uses GitHub OIDC. The AWS role is restricted to listing and uploading website-bucket objects and creating invalidations for the configured CloudFront distribution; it cannot deploy Lambda, change DynamoDB, or apply Terraform.
+
+As checked on November 7, 2026, the repository has no `main` branch protection/ruleset or GitHub Actions environment approval, and the workflow has no deployment concurrency group. GitHub reports CI results, but they are not enforced by branch protection. The owner must review and authorize a manual production dispatch, confirm the current repository protections, and avoid overlapping deployment runs. Backend Terraform apply remains a separate, manually authorized operation.
 
 1. Open the repository’s **Actions** tab on GitHub.
 2. Select **V2 Portfolio CI/CD**.
@@ -27,7 +33,7 @@ Wait for both workflow jobs to pass. Then open the [live site](https://jeysibn.d
 curl -i https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com/visits
 ```
 
-Expect HTTP 200 and JSON containing a numeric `count`. This GET does not change the count. A POST may increment the real counter once per source IP during the 24-hour window; do not send one just to test deployment.
+Expect HTTP 200 and JSON containing a numeric `count`. This GET does not change the count. Do not send a production POST as a smoke test; it can change the real aggregate. Use the consent flow on the live site only when authorized to do so.
 
 CloudFront invalidation can take time to finish propagating after the workflow succeeds. If the page still looks old, check the invalidation and wait before starting another deployment.
 
@@ -36,8 +42,11 @@ CloudFront invalidation can take time to finish propagating after the workflow s
 - If `build-and-test` fails, read the failing step and fix the source before merging or deploying again.
 - If `Deploy V2 to AWS` fails, inspect the failed step and current workflow run. Do not run `terraform destroy` or retry blindly; asset uploads may have partly completed.
 - To roll back a broken frontend, revert the frontend change through Git, merge the revert to `main`, then manually run the workflow again. The workflow uploads new assets and replaces `index.html` last; it does not delete old hashed assets.
+- Keep the enhanced backend during frontend rollback. A legacy backend may treat an opted-in UUID POST as an IP-derived registration if a capability GET was completed before rollback or an older page sends a request later. Cached/open pages can outlive a rollout, so waiting for them to drain is not a complete guarantee. No registration-disable switch exists. Roll back the frontend first and retain the enhanced backend; consider legacy-backend restoration only as an explicitly approved privacy and counting behavior change. Keep all visitor records and the historical aggregate.
 
 Terraform infrastructure changes use a separate reviewed Terraform plan and are not part of this frontend deployment workflow.
+
+For backend/frontend rollback ordering and the effect of rolling back only one side, see [backend CI and deployment](backend-cicd.md#rollback).
 
 ## Version 1
 

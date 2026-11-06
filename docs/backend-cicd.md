@@ -1,100 +1,114 @@
 # Backend CI and manual Lambda deployment (V2)
 
-This guide explains how GitHub checks backend changes and how to deploy the Lambda function with Terraform. Backend deployment is manual and can change live AWS resources.
+Backend deployment is a separate, manual operation that can change live AWS resources. No deployment is performed by this repository's backend CI job.
 
-## The flow
+## Checks
 
-```text
-Edit Python code → Open pull request → GitHub runs backend tests
-       → Merge to main → Keep IP_HASH_SECRET stable → Build Lambda ZIP
-       → Review Terraform plan → Apply the approved plan → Deploy frontend
-```
-
-The `Backend CI (Python 3.14)` job in `.github/workflows/deploy-v2.yml` runs Python tests without AWS, checks syntax, and builds the Lambda ZIP. The frontend continues to use its separate manual S3/CloudFront workflow.
-
-Run the backend checks locally from the repository root:
+Pull requests run `Backend CI (Python 3.14)` from `.github/workflows/deploy-v2.yml`. It runs backend unit tests, syntax compilation, and Lambda ZIP validation without AWS credentials. Run the same checks from the repository root:
 
 ```bash
+python3 -m pip install -r backend/requirements-test.txt
 python3 -m unittest discover -s backend/tests -v
 python3 -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py
 python3 backend/lambda-v2/package.py
 ```
 
-## Manual deployment order
+## Safe rollout sequence
 
-Use this after merging the tested backend code into `main`. Use a clean local checkout, an authorized AWS identity for account `665514296439`, and region `ap-southeast-2`.
+The enhanced backend advertises `registrationSupported: true` in `GET /visits`. The enhanced frontend reads that capability before sending a UUID registration. An older backend does not advertise the capability, so the enhanced frontend displays its count through GET and sends no POST. The enhanced backend accepts only a validated UUID v4 for registration. A legacy bodyless POST receives the current count with `counted: false`; it creates no browser history and performs no IP-derived tracking. This lets already-open legacy pages keep displaying the count during rollout, with a temporary registration gap for those clients.
 
-1. Confirm the branch and AWS identity:
+### Stage A — Preparation
+
+1. Review the implementation PR and CI evidence. Before any release, confirm the exact production AWS account and region with an authorized identity:
 
    ```bash
-   git status
-   git branch --show-current
+   git status --short --branch
    aws sts get-caller-identity
    ```
 
-2. Provide a stable secret to Terraform. For the first deployment only, generate it with OpenSSL and export it as the Terraform variable:
+2. Confirm an owner-approved backup/recovery path for the existing DynamoDB table and V2 Terraform state. Read `visitors.count` with AWS tooling and record its current value privately. For example, this returns only the count value:
 
    ```bash
-   export TF_VAR_ip_hash_secret="$(openssl rand -hex 32)"
+   aws dynamodb get-item \
+     --table-name cloud-resume-v2-visitor-counter \
+     --key '{"id":{"S":"visitors"}}' \
+     --consistent-read \
+     --projection-expression '#count' \
+     --expression-attribute-names '{"#count":"count"}' \
+     --query 'Item.count.N' --output text
    ```
 
-   Save the generated value in an approved password manager before closing the shell. For every later deployment, restore that exact value as `TF_VAR_ip_hash_secret`; do not generate a new secret. Changing it makes existing IP digest keys unreachable until TTL removes them and lets those IPs be counted again.
-
-   Do not commit the value or put it in a frontend `VITE_*` variable. Terraform's `sensitive = true` redacts routine CLI output; it does not remove the value from Terraform state or Lambda configuration. The configured S3 backend enables encryption and state locking, but access to the state bucket and Lambda configuration must still be restricted because authorized readers can retrieve the secret.
-
-3. Run tests and build the deployment ZIP:
+   Open the live site with browser developer tools, do not opt in, and confirm the hero count displays using GET without a registration POST. Capture the currently deployed Lambda metadata without printing environment values:
 
    ```bash
-   python3 -m unittest discover -s backend/tests -v
-   python3 -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py
+   aws lambda get-function-configuration \
+     --function-name cloud-resume-v2-visitor-function \
+     --query '{State:State,LastModified:LastModified,Runtime:Runtime,VariableNames:keys(Environment.Variables)}'
+   ```
+
+   Note the recent Lambda `Errors`/`Throttles` and API Gateway 5xx metrics in CloudWatch as the baseline. Confirm the currently deployed frontend and backend contracts with read-only inspection. Do not reset the count.
+
+3. Supply the existing `TF_VAR_ip_hash_secret` through the approved secure mechanism and preserve its current value. Terraform reuses this existing secret as `VISITOR_ID_HMAC_SECRET`; it does not rotate the production secret. Terraform state and Lambda configuration contain secrets despite sensitive output redaction. Never commit or expose them to frontend build variables.
+
+4. Build the package and initialize Terraform against the existing V2 state only:
+
+   ```bash
    python3 backend/lambda-v2/package.py
-   ```
-
-4. Review the Terraform plan:
-
-   ```bash
    cd infra/terraform
    terraform init -reconfigure
-   terraform plan -out=.terraform/lambda.tfplan
-   terraform show .terraform/lambda.tfplan
+   umask 077
+   PLAN_FILE=$(mktemp /tmp/cloud-resume-visitor-analytics.XXXXXX.tfplan)
+   terraform plan -input=false -out="$PLAN_FILE"
+   terraform show "$PLAN_FILE"
    ```
 
-   Review each proposed change. DynamoDB authorizes each operation inside a transaction through its item action. This handler uses `Put` and `Update`, which require `dynamodb:PutItem` and `dynamodb:UpdateItem`; the Lambda role already has both on the visitor table. The plan may update the Lambda ZIP or environment. The existing `visitors` counter item is initialized outside Terraform and should be preserved. Stop if the plan proposes deleting, replacing, or changing unrelated resources.
+   Treat the saved plan as sensitive. Keep it owner-readable only, out of Git, and delete that newly created temporary plan after review or apply. Never touch the two unrelated pre-existing `infra/terraform/tfplan*` artifacts.
 
-5. Apply the reviewed plan:
+5. Review every plan action before applying. Expected changes are limited to the existing Lambda code/environment and perhaps metadata; the existing table-scoped IAM permissions (`GetItem`, `PutItem`, and `UpdateItem`) cover the one-item actions used within transactions. The table, its TTL, API routes, CORS, throttling, and the pre-existing `visitors` item must remain. Stop if the plan proposes table replacement/deletion, counter reset, V1 state, legacy secret rotation, or unrelated changes. The Lambda role has no scan permission.
+
+### Stage B — Backend compatibility
+
+6. After explicit owner authorization, apply only the reviewed saved plan:
 
    ```bash
-   terraform apply .terraform/lambda.tfplan
+   terraform apply "$PLAN_FILE"
    ```
 
-6. Deploy the frontend after the backend using the manual V2 frontend workflow in the [deployment runbook](deployment-runbook.md).
-
-7. From the same machine, send two POST requests to `https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com/visits`. The first should return `counted: true`; the second should return `counted: false` with the same count. Confirm DynamoDB has an `ip#...` item with numeric `expires_at`. These requests change the live counter only once for that IP during the TTL window.
-
-8. The read-only GET smoke check is:
+7. Verify with read-only checks first:
 
    ```bash
-   curl https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com/visits
+   curl -fsS https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com/visits
+   aws lambda get-function-configuration \
+     --function-name cloud-resume-v2-visitor-function \
+     --query '{State:State,LastModified:LastModified,Runtime:Runtime,VariableNames:keys(Environment.Variables)}'
    ```
 
-   It should return JSON with a `count` value. Check CloudWatch logs if the Lambda returns an error.
+   `GET /visits` must return the preserved count and `registrationSupported: true`. Confirm the table still has TTL enabled on `expires_at` through read-only AWS tooling, and check CloudWatch Lambda `Errors` plus API 5xx/4xx metrics for new failures. Do not print or share Lambda environment values or raw visitor IDs. A bodyless legacy POST is read-only in the enhanced handler, but do not send even that production POST without separate explicit authorization. Local tests already verify `{counted:false,count}` and no visitor write; the old frontend continues to display the count during the temporary registration gap.
 
-## Why Terraform updates Lambda
+### Stage C — Frontend enhancement
 
-The `aws_lambda_function.visitor` resource in `infra/terraform/main.tf` points to the generated ZIP:
+8. After backend compatibility is verified and the change is approved/merged, deploy the frontend from `main` using **V2 Portfolio CI/CD** as described in the [frontend runbook](deployment-runbook.md). Verify consent defaults to off, the count loads, opt-out saves a declined choice and attempts to remove the local identifier, storage failures show a warning and stop registration for the current page, and the counter appears in the hero. The enhanced frontend sends registration only after affirmative opt-in and the backend capability check.
 
-```hcl
-filename         = "${path.module}/../../backend/lambda-v2/function.zip"
-source_code_hash = filebase64sha256("${path.module}/../../backend/lambda-v2/function.zip")
-```
+### Stage D — Production verification
 
-Terraform updates the existing Lambda when the ZIP hash or environment changes. It does not need to rebuild API Gateway for this handler change.
+9. Only with explicit authorization, use one consenting test browser for this small smoke sequence. Record the aggregate privately immediately before the test.
 
-## If something fails
+   1. Open the deployed page without opting in. Confirm the counter loads with GET only and there is no visitor ID or registration POST.
+   2. Opt in. Confirm one UUID registration succeeds, the aggregate increases once, and DynamoDB has one `visitor#<HMAC digest>` record with `first_seen_at`, `last_seen_at`, `active_until`, `page_loads`, `counted_visits`, `is_returning`, and `expires_at`. Inspect only the digest and fields; never expose the browser UUID.
+   3. Reload the page within 24 hours. Confirm `counted:false`, `returning:true`, updated activity/deadline fields, and no aggregate increment. A public GET continues to return the aggregate and does not modify it.
+   4. Opt out. Confirm the page stops new registration attempts and reports that a POST already sent may still complete. Confirm the local ID is removed when browser storage permits. Check that the aggregate remains unchanged by the opt-out itself.
+   5. Check CloudWatch Lambda `Errors` and API Gateway 5xx metrics for the test period. Compare the count against the private baseline plus the single expected registration.
 
-- **GitHub CI fails:** Read the failed step and run its command locally.
-- **`terraform init` or `plan` fails:** Verify AWS identity, access to the V2 state bucket, region, and `TF_VAR_ip_hash_secret`.
-- **Terraform shows unexpected infrastructure changes:** Stop and investigate before applying.
-- **API returns an error:** Check CloudWatch logs and confirm the deployed Lambda environment variables.
+   Do not wait 24 hours or modify production timestamps to test expiry. Verify exactly-at-boundary counting and 90-day logical retention reset using local tests or a controlled non-production fixture. Verify legacy bodyless POST behavior locally; only test it against production after separate explicit authorization. Never inspect or log raw browser IDs.
 
-The API is public and unauthenticated. IP-based counts are approximate: shared NAT/CGNAT may undercount, VPN or mobile IP rotation may overcount, and bots that run JavaScript may be counted. HMAC hashing avoids storing raw IPs but hashed values may still be personal data under some regimes. DynamoDB TTL deletes the hash records after expiry, generally within 24–48 hours.
+The frontend workflow uploads files and invalidates CloudFront only; it does not run Terraform. Terraform state is stored under the V2 backend and must never be replaced with V1 state.
+
+## Stage E — Rollback
+
+- **Frontend only:** republish the previous frontend. Its bodyless POST receives the enhanced backend's read-only `{counted:false,count}` compatibility response, so count display works but registration pauses. The visitor records and aggregate remain intact.
+- **Default rollback:** keep the enhanced backend deployed and roll back the frontend first. The legacy frontend can read the count; its bodyless POST receives the enhanced backend's read-only `{counted:false,count}` response. Registration pauses, but no legacy IP-derived tracking resumes.
+- **Backend-only rollback:** do not treat this as a privacy-safe operation. The enhanced frontend checks `registrationSupported` with GET and sends its UUID in a later POST; a rollback can occur between those requests, and the legacy handler may ignore the UUID and track by IP. Already-open or cached pages can also make requests after a deployment. Waiting for tabs or caches to drain cannot guarantee that no request remains. No registration kill switch is implemented. If an emergency requires restoring the legacy handler, treat it as an explicit privacy and counting behavior change and obtain owner approval before doing so.
+- **Contract behavior:** enhanced frontend + legacy backend is GET-only when the enhanced frontend's capability check reaches the legacy backend; enhanced backend + legacy frontend keeps displaying the aggregate but its bodyless POST does not register. These rollout combinations preserve count display but create a temporary registration gap. Retain the enhanced backend as the default rollback target.
+- **Never** destroy/recreate the table, reset `visitors.count`, run an unreviewed plan, or use retired V1 state.
+
+Do not use production POST requests for health checks. The API is public and unauthenticated; throttling, HMAC pseudonymization, and strict payload validation reduce accidental or simple abusive traffic but do not stop automated callers from fabricating UUIDs.
