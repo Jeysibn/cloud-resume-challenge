@@ -40,7 +40,7 @@ function visitorIdForOptedInBrowser(): string | null {
   if (!store || typeof crypto.randomUUID !== "function") return null;
   try {
     const saved = store.getItem(VISITOR_KEY);
-    if (saved && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(saved)) {
+    if (saved && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(saved)) {
       return saved;
     }
     const created = crypto.randomUUID();
@@ -156,7 +156,7 @@ export function VisitorCounter() {
       } else {
         if (typeof crypto.randomUUID !== "function") throw new Error("Secure UUID generation is unavailable.");
         const current = store.getItem(VISITOR_KEY);
-        const visitorId = current && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(current)
+        const visitorId = current && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(current)
           ? current
           : crypto.randomUUID();
         store.setItem(VISITOR_KEY, visitorId);

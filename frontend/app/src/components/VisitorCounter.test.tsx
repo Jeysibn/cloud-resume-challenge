@@ -55,6 +55,18 @@ it("reuses stored consent and identifier on a later mount", async () => {
   expect(fetchVisitorCount).not.toHaveBeenCalled();
 });
 
+it("replaces a non-canonical stored UUID so the backend contract stays valid", async () => {
+  window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
+  window.localStorage.setItem("jeysibn.visitor-id.v1", "123E4567-E89B-42D3-A456-426614174010");
+  render(<VisitorCounter />);
+  await screen.findByText("42 recorded visits");
+  await vi.waitFor(() => expect(registerVisit).toHaveBeenCalledTimes(1));
+  const replacement = window.localStorage.getItem("jeysibn.visitor-id.v1");
+  expect(replacement).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  expect(replacement).not.toBe("123E4567-E89B-42D3-A456-426614174010");
+  expect(registerVisit).toHaveBeenCalledExactlyOnceWith(replacement);
+});
+
 it("does not duplicate a registration when StrictMode replays the effect", async () => {
   window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
   window.localStorage.setItem("jeysibn.visitor-id.v1", "123e4567-e89b-42d3-a456-426614174011");

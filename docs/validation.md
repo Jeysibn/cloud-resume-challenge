@@ -112,7 +112,7 @@ The final pass added version negotiation for mixed frontend/backend rollout, rea
 | `/tmp/crc-visitor-venv/bin/python -m unittest discover -s backend/tests -v` | Passed: 29 backend/V1 tests, including legacy POST compatibility, strict UUID validation, 24-hour boundary, late requests, concurrency, DynamoDB failures, and historical count preservation. |
 | `/tmp/crc-visitor-venv/bin/python -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py` | Passed. |
 | `/tmp/crc-visitor-venv/bin/python backend/lambda-v2/package.py` | Passed; package contains the current handler. |
-| `npm run typecheck`, `npm run lint`, `npm test -- --run`, `npm run build`, `npm run test:metadata`, `npm run perf:budget` | Passed; 81 frontend unit tests across 16 files. |
+| `npm run typecheck`, `npm run lint`, `npm test -- --run`, `npm run build`, `npm run test:metadata`, `npm run perf:budget` | Passed; 82 frontend unit tests across 16 files. |
 | `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4184 npm run test:ui -- --workers=2` | Passed: 67 passed, 23 skipped. The preview ran from this checkout; hero visibility, counter consent, API compatibility, accessibility, reduced motion, and 1440/1024/768/390/320px layout checks were exercised. |
 | `terraform fmt -check -recursive .`, `terraform validate -no-color` | Passed. |
 | Read-only `aws sts get-caller-identity` | Passed. |
