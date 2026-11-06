@@ -29,6 +29,7 @@ it("lets the visitor enable and disable recognition from the settings panel", as
  fireEvent.click(screen.getByText("Privacy Settings"));
  fireEvent.click(screen.getByRole("button", { name: "Disable browser recognition" }));
  expect(window.localStorage.getItem("jeysibn.visitor-counting-consent.v1")).toBe("declined");
+ expect(screen.getByText("disabled")).toBeInTheDocument();
  expect(screen.getByText(/Browser recognition is disabled/)).toBeInTheDocument();
  fireEvent.click(screen.getByRole("button", { name: "Enable browser recognition" }));
  expect(window.localStorage.getItem("jeysibn.visitor-counting-consent.v1")).toBe("accepted");
@@ -50,6 +51,23 @@ it("does not register without affirmative preference under the opt-in policy", a
  expect(await screen.findByText("8 recorded visits")).toBeInTheDocument();
  expect(registerVisit).not.toHaveBeenCalled();
  expect(window.localStorage.getItem("jeysibn.visitor-id.v1")).toBeNull();
+});
+
+it("syncs footer status across tabs and gates automatic registration on the updated preference", async () => {
+ render(<><VisitorCounter/><SiteFooter/></>);
+ expect(await screen.findByText("9 recorded visits")).toBeInTheDocument();
+ expect(registerVisit).toHaveBeenCalledTimes(1);
+ fireEvent.click(screen.getByText("Privacy Settings"));
+
+ window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "declined");
+ window.dispatchEvent(new StorageEvent("storage", { key: "jeysibn.visitor-counting-consent.v1", newValue: "declined" }));
+ expect(await screen.findByText("disabled")).toBeInTheDocument();
+ await vi.waitFor(() => expect(registerVisit).toHaveBeenCalledTimes(1));
+
+ window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
+ window.dispatchEvent(new StorageEvent("storage", { key: "jeysibn.visitor-counting-consent.v1", newValue: "accepted" }));
+ expect(await screen.findByText("enabled")).toBeInTheDocument();
+ await vi.waitFor(() => expect(registerVisit).toHaveBeenCalledTimes(2));
 });
 
 it("aborts in-flight registration on disable and does not resume it", async () => {

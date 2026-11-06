@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 export const VISITOR_KEY = "jeysibn.visitor-id.v1";
 export const CONSENT_KEY = "jeysibn.visitor-counting-consent.v1";
 export const PREFERENCE_EVENT = "jeysibn:visitor-recognition-change";
@@ -10,6 +12,26 @@ export function preferenceValue(): string | null {
   } catch {
     return null;
   }
+}
+
+function preferenceSnapshot(): string {
+  return `${recognitionAllowed() ? "1" : "0"}:${preferenceValue() === "declined" ? "1" : "0"}`;
+}
+
+function subscribePreference(callback: () => void): () => void {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === CONSENT_KEY || event.key === VISITOR_KEY || event.key === null) callback();
+  };
+  window.addEventListener(PREFERENCE_EVENT, callback);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    window.removeEventListener(PREFERENCE_EVENT, callback);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+export function useRecognitionPreference(): string {
+  return useSyncExternalStore(subscribePreference, preferenceSnapshot, preferenceSnapshot);
 }
 
 export function recognitionAllowed(): boolean {
