@@ -8,7 +8,7 @@ This guide publishes frontend files to the existing V2 website. It does not crea
 2. Open a pull request to `main`. GitHub Actions runs the frontend checks; the AWS deploy job is skipped for pull requests.
 3. Merge the pull request only after its checks pass.
 
-For a visitor-counter API change, first back up/recoverably record the existing table/state and aggregate count. Review the Terraform plan and deploy the compatible backend before the frontend. `GET /visits` returns `{ count, registrationSupported: true }`; enhanced clients send `POST /visits` with `{ "visitorId": "<UUID v4>" }` only after consent and capability detection, receiving `{ counted, count, returning }`. Older clients can keep displaying the aggregate: their bodyless POST receives `{ counted: false, count }` without registration. Enhanced clients talking to an older backend use GET only because the capability flag is absent. Both mixed-version cases have a temporary registration gap and never silently fall back to IP-derived tracking on the enhanced backend/client.
+For a visitor-counter API change, first record the existing table/state and aggregate count using read-only/approved methods. Complete the production privacy review in [architecture](architecture.md#privacy-and-interpretation) before choosing automatic recognition or an opt-in build (`VITE_VISITOR_RECOGNITION_POLICY=opt-in`). Review any Terraform plan and deploy the compatible backend before the frontend. `GET /visits` returns `{ count, registrationSupported: true }`; clients send `POST /visits` with `{ "visitorId": "<UUID v4>" }` only when persistent recognition is permitted by the built policy, the saved preference, and backend capability detection, receiving `{ counted, count, returning }`. Older clients can keep displaying the aggregate: their bodyless POST receives `{ counted: false, count }` without registration. Enhanced clients talking to an older backend use GET only because the capability flag is absent. Both mixed-version cases have a temporary registration gap and never silently fall back to IP-derived tracking on the enhanced backend/client.
 
 ## Start a deployment
 
@@ -33,7 +33,7 @@ Wait for both workflow jobs to pass. Then open the [live site](https://jeysibn.d
 curl -i https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com/visits
 ```
 
-Expect HTTP 200 and JSON containing a numeric `count`. This GET does not change the count. Do not send a production POST as a smoke test; it can change the real aggregate. Use the consent flow on the live site only when authorized to do so.
+Expect HTTP 200 and JSON containing a numeric `count`. This GET does not change the count. Do not send a production POST as a smoke test; it can change the real aggregate. Use footer Privacy Settings for preference checks. If the privacy review requires opt-in, set the GitHub repository variable `VITE_VISITOR_RECOGNITION_POLICY=opt-in` before the build.
 
 CloudFront invalidation can take time to finish propagating after the workflow succeeds. If the page still looks old, check the invalidation and wait before starting another deployment.
 

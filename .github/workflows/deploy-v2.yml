@@ -42,6 +42,7 @@ jobs:
       - name: Build V2 frontend
         env:
           VITE_API_BASE_URL: https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com
+          VITE_VISITOR_RECOGNITION_POLICY: ${{ vars.VITE_VISITOR_RECOGNITION_POLICY }}
         run: npm run build
 
       - name: Save frontend build

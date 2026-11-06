@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchVisitorStatus, isApiConfigured, registerVisit } from "../api";
-
-const VISITOR_KEY = "jeysibn.visitor-id.v1";
-const CONSENT_KEY = "jeysibn.visitor-counting-consent.v1";
+import { CONSENT_KEY, PREFERENCE_EVENT, recognitionAllowed, VISITOR_KEY } from "../visitorRecognition";
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const registrations = new Map<string, Promise<Awaited<ReturnType<typeof registerVisit>>>>();
 
 function visitorId(): string | null {
   try {
-    if (window.localStorage.getItem(CONSENT_KEY) === "declined") return null;
+    if (!recognitionAllowed()) return null;
     const existing = window.localStorage.getItem(VISITOR_KEY);
     if (existing && UUID_V4.test(existing)) return existing;
     if (typeof crypto === "undefined" || !crypto.randomUUID) return null;
@@ -21,10 +19,10 @@ function visitorId(): string | null {
   }
 }
 
-function registerOnce(id: string) {
+function registerOnce(id: string, signal?: AbortSignal) {
   const pending = registrations.get(id);
   if (pending) return pending;
-  const request = registerVisit(id);
+  const request = registerVisit(id, signal);
   registrations.set(id, request);
   void request.finally(() => {
     if (registrations.get(id) === request) registrations.delete(id);
@@ -37,6 +35,7 @@ export function VisitorCounter() {
   const [count, setCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(configured);
   const [error, setError] = useState(false);
+  const [preferenceRevision, setPreferenceRevision] = useState(0);
 
   const loadCount = useCallback(async (signal?: AbortSignal, register = true) => {
     try {
@@ -47,7 +46,7 @@ export function VisitorCounter() {
         const id = visitorId();
         if (id) {
           try {
-            const result = await registerOnce(id);
+            const result = await registerOnce(id, signal);
             if (!signal?.aborted) setCount(result.count);
           } catch {
             // Keep the successfully fetched total visible if registration fails.
@@ -62,11 +61,20 @@ export function VisitorCounter() {
   }, []);
 
   useEffect(() => {
-    if (!configured) return;
-    const controller = new AbortController();
-    void Promise.resolve().then(() => loadCount(controller.signal));
-    return () => controller.abort();
-  }, [configured, loadCount]);
+    const onPreferenceChange = () => setPreferenceRevision(revision => revision + 1);
+    window.addEventListener(PREFERENCE_EVENT, onPreferenceChange);
+    const onStorageChange = (event: StorageEvent) => {
+      if (event.key === CONSENT_KEY || event.key === VISITOR_KEY || event.key === null) onPreferenceChange();
+    };
+    window.addEventListener("storage", onStorageChange);
+    const controller = configured ? new AbortController() : null;
+    if (controller) void Promise.resolve().then(() => loadCount(controller.signal));
+    return () => {
+      controller?.abort();
+      window.removeEventListener(PREFERENCE_EVENT, onPreferenceChange);
+      window.removeEventListener("storage", onStorageChange);
+    };
+  }, [configured, loadCount, preferenceRevision]);
 
   function retryCount() {
     setLoading(true);

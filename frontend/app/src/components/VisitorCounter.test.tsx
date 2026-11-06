@@ -19,7 +19,8 @@ it("loads the count and registers automatically without hero controls", async ()
   render(<VisitorCounter />);
   await screen.findByText("43 recorded visits");
   expect(fetchVisitorStatus).toHaveBeenCalled();
-  expect(registerVisit).toHaveBeenCalledExactlyOnceWith(UUID);
+  expect(registerVisit).toHaveBeenCalledTimes(1);
+  expect(registerVisit).toHaveBeenNthCalledWith(1, UUID, expect.any(AbortSignal));
   expect(screen.queryByRole("button")).not.toBeInTheDocument();
 });
 
@@ -37,7 +38,8 @@ it("replaces an invalid stored UUID with a canonical UUID v4", async () => {
   render(<VisitorCounter />);
   await screen.findByText("43 recorded visits");
   expect(window.localStorage.getItem("jeysibn.visitor-id.v1")).toBe(UUID);
-  expect(registerVisit).toHaveBeenCalledExactlyOnceWith(UUID);
+  expect(registerVisit).toHaveBeenCalledTimes(1);
+  expect(registerVisit).toHaveBeenNthCalledWith(1, UUID, expect.any(AbortSignal));
 });
 
 it("does not track when localStorage is blocked", async () => {
