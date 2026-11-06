@@ -87,16 +87,16 @@ The enhanced backend advertises `registrationSupported: true` in `GET /visits`. 
 
 ### Stage C — Frontend enhancement
 
-8. After backend compatibility is verified and the change is approved/merged, deploy the frontend from `main` using **V2 Portfolio CI/CD** as described in the [frontend runbook](deployment-runbook.md). Verify consent defaults to off, the count loads, opt-out saves a declined choice and attempts to remove the local identifier, storage failures show a warning and stop registration for the current page, and the counter appears in the hero. The enhanced frontend sends registration only after affirmative opt-in and the backend capability check.
+8. After backend compatibility and the production privacy review are complete and the change is approved/merged, deploy the frontend from `main` using **V2 Portfolio CI/CD** as described in the [frontend runbook](deployment-runbook.md). Confirm which policy is built: default automatic recognition, or `VITE_VISITOR_RECOGNITION_POLICY=opt-in` if prior affirmative consent is required. Verify aggregate GET works independently, Privacy Settings is in the footer, prior declines remain honored, disabling removes the local UUID when possible, storage errors remain display-only, and the hero counter layout remains correct. In opt-in mode, verify no UUID or POST occurs until affirmative enablement.
 
 ### Stage D — Production verification
 
 9. Only with explicit authorization, use one consenting test browser for this small smoke sequence. Record the aggregate privately immediately before the test.
 
-   1. Open the deployed page without opting in. Confirm the counter loads with GET only and there is no visitor ID or registration POST.
-   2. Opt in. Confirm one UUID registration succeeds, the aggregate increases once, and DynamoDB has one `visitor#<HMAC digest>` record with `first_seen_at`, `last_seen_at`, `active_until`, `page_loads`, `counted_visits`, `is_returning`, and `expires_at`. Inspect only the digest and fields; never expose the browser UUID.
+   1. Open the deployed page and verify behavior matches the privacy-approved build policy. In opt-in mode, confirm GET displays the total before consent and no UUID or POST exists until affirmative enablement. In automatic mode, confirm the owner has approved that behavior after privacy review.
+   2. If applicable under the selected policy, enable recognition in footer Privacy Settings. Confirm one UUID registration succeeds, the aggregate increases once, and DynamoDB has one `visitor#<HMAC digest>` record with `first_seen_at`, `last_seen_at`, `active_until`, `page_loads`, `counted_visits`, `is_returning`, and `expires_at`. Inspect only the digest and fields; never expose the browser UUID.
    3. Reload the page within 24 hours. Confirm `counted:false`, `returning:true`, updated activity/deadline fields, and no aggregate increment. A public GET continues to return the aggregate and does not modify it.
-   4. Opt out. Confirm the page stops new registration attempts and reports that a POST already sent may still complete. Confirm the local ID is removed when browser storage permits. Check that the aggregate remains unchanged by the opt-out itself.
+   4. Disable recognition in footer Privacy Settings. Confirm the page stops future registration attempts; a request already sent may complete. Confirm local UUID removal when browser storage permits, and that the global aggregate remains unchanged by disabling. Server-side visitor records are retained until the 90-day inactivity deadline and asynchronous TTL cleanup; there is no public record-deletion endpoint.
    5. Check CloudWatch Lambda `Errors` and API Gateway 5xx metrics for the test period. Compare the count against the private baseline plus the single expected registration.
 
    Do not wait 24 hours or modify production timestamps to test expiry. Verify exactly-at-boundary counting and 90-day logical retention reset using local tests or a controlled non-production fixture. Verify legacy bodyless POST behavior locally; only test it against production after separate explicit authorization. Never inspect or log raw browser IDs.

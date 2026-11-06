@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import type { ThemeOrigin } from "../hooks";
 import type { ThemePreference } from "../portfolio";
+import { updateRecognitionPreference, useRecognitionPreference } from "../visitorRecognition";
 import { JiMark } from "./hero/Monogram";
 
 /**
@@ -110,10 +111,38 @@ export function SiteHeader({
   );
 }
 export function SiteFooter() {
+  const preference = useRecognitionPreference();
+  const enabled = preference.startsWith("1:");
+  const previouslyDeclined = preference.endsWith(":1");
+  const [message, setMessage] = useState("");
+  const optInRequired = import.meta.env.VITE_VISITOR_RECOGNITION_POLICY === "opt-in";
+
+  function setRecognition(next: boolean) {
+    const saved = updateRecognitionPreference(next);
+    setMessage(saved
+      ? next ? "Browser recognition is enabled." : "Browser recognition is disabled. A request already sent may finish; stored server records expire after 90 days of inactivity."
+      : next ? "The preference could not be saved, so recognition remains off for this page." : "Recognition is off for this page, but browser storage could not save the preference or remove the browser ID.");
+  }
+
   return (
     <footer className="site-footer">
       <p className="footer-brand">JEYSIBN · Jerome Christian Ibon</p>
       <p>React + TypeScript</p>
+      <details className="privacy-settings">
+        <summary>Privacy Settings</summary>
+        <section aria-labelledby="privacy-settings-title">
+          <h2 id="privacy-settings-title">Visitor recognition</h2>
+          <p>The public aggregate count loads without creating a browser identifier. When recognition is enabled, this site stores a random UUID in localStorage and sends it to the visitor API to recognize this browser on later visits. It does not identify a person.</p>
+          <p>The backend stores a keyed HMAC digest and limited visit metadata, not the raw UUID. Records have a 90-day inactivity retention deadline; DynamoDB removes expired records asynchronously. The total is recorded eligible visits, not unique people.</p>
+          <p>Disabling recognition removes the local UUID when possible. A request already sent may complete, and disabling does not immediately delete the retained server record.</p>
+          {optInRequired && <p>Recognition requires your affirmative choice under the current site policy.</p>}
+          <p>Current preference: <strong>{enabled ? "enabled" : "disabled"}</strong>{previouslyDeclined ? " (your earlier choice is preserved)" : ""}</p>
+          {enabled
+            ? <button type="button" className="visitor-text-button" onClick={() => setRecognition(false)}>Disable browser recognition</button>
+            : <button type="button" className="visitor-text-button" onClick={() => setRecognition(true)}>Enable browser recognition</button>}
+          {message && <p role="status">{message}</p>}
+        </section>
+      </details>
     </footer>
   );
 }

@@ -1,26 +1,32 @@
-# Visitor counter integration
+# Visitor counter and privacy preferences
 
-The V2 website calls the API Gateway HTTP API at `VITE_API_BASE_URL` without `/visits`. This is public configuration; never put AWS keys or private secrets in `VITE_*` variables.
+The portfolio always reads the public aggregate with `GET /visits`; this does not create a browser identifier. When persistent browser recognition is enabled, the frontend stores a random UUID v4 in first-party `localStorage` and sends it to `POST /visits`. The backend uses a keyed HMAC digest as its DynamoDB key and stores limited timestamps and counters. The UUID recognizes a browser token, not a person. The aggregate is recorded eligible visits, not unique people.
 
-## Consent and browser storage
+## Privacy Settings
 
-The portfolio reads the public aggregate with `GET /visits`. Anonymous registration remains off until a visitor selects the explicit enable control. After opt-in, the browser creates a cryptographically random UUID v4 using `crypto.randomUUID()` and saves it in first-party `localStorage`. It sends the UUID only to `POST /visits`; Lambda stores a server-derived HMAC digest instead. The browser ID remains in local storage until opt-out or site-data clearing. Opt-out saves a declined preference and attempts to remove the ID. It prevents new registration attempts from the current page; a request already sent before opt-out may still complete. If storage blocks either operation, tracking stops for the current page but the preference may not survive reload; the control displays an accessible warning.
+The **Privacy Settings** disclosure is in the site footer, outside the hero. It lets visitors enable or disable persistent browser recognition. Disabling writes the existing `jeysibn.visitor-counting-consent.v1=declined` preference, stops future requests on the current page, aborts local in-flight requests where possible, and removes the local UUID when storage permits. A request already sent may complete. Disabling does not delete backend records; those records expire after 90 days of inactivity, while DynamoDB TTL deletion is asynchronous. The global aggregate count is never reset by preference changes.
 
-If consent is not given, tracking is disabled, browser storage is blocked, or the identifier was cleared, the page still reads and displays the aggregate count but does not create or send an ID. Clearing site data may cause the same browser to be counted as new next time. A browser ID does not identify a person and can be copied or spoofed.
+Prior declines are preserved and remain display-only. A previously accepted UUID remains active under the default automatic-recognition policy, but visitors can disable it in Privacy Settings. New visitors are automatically recognized under the proposed product behavior. This behavior has not been legally cleared.
 
-The short notice beside the control explains the purpose (recording aggregate page activity), random ID, HMAC storage, and 90-day inactivity retention. After that logical deadline, a returning registration starts a new record history even if DynamoDB TTL has not physically removed the old item; physical cleanup can be delayed. This opt-in is a privacy-conservative design decision, not a claim that one consent rule applies everywhere. The Philippines DPA requires transparent, lawful and proportionate processing, and consent cannot be assumed if relied on; browser storage may also fall under ePrivacy rules in some jurisdictions. See the [National Privacy Commission](https://privacy.gov.ph/data-privacy-act/), its [advisories and circulars](https://privacy.gov.ph/pips-and-pics/advisories-circulars/), and the [European Data Protection Board guidance](https://www.edpb.europa.eu/documents/guideline/guidelines-22023-on-technical-scope-of-art-53-of-eprivacy-directive_en). Requirements depend on context and location.
+## Policy requiring affirmative opt-in
+
+For a jurisdiction or product policy requiring affirmative opt-in, set the GitHub Actions repository variable `VITE_VISITOR_RECOGNITION_POLICY=opt-in` before building the frontend. The workflow passes this public build-time policy into Vite; an empty/unset value selects the proposed automatic mode. The aggregate count continues to load, while UUID creation and POST registration stay off until the visitor enables recognition through Privacy Settings. A prior decline continues to disable recognition until changed there. This is a technical gate, not a substitute for determining the applicable legal basis, notice, consent withdrawal, or other requirements. Do not deploy automatic mode until the privacy review checkpoint in [the architecture note](../../docs/architecture.md#privacy-and-interpretation) is complete.
+
+If browser storage is blocked, counting remains display-only. Preference changes are applied in the current page even when storage fails; the setting may not persist across reloads. Legacy `declined` values are never overwritten on page load. No server-side deletion API exists. A future deletion mechanism would need authenticated or otherwise abuse-resistant proof of control over an identifier, careful treatment of shared devices, rate limiting, audit and retention rules, and must never alter the aggregate count.
+
+## Retention and counting
+
+A new recognized UUID increments the existing aggregate in an atomic DynamoDB transaction. A recognized visit while the activity window is open does not increment; it refreshes `active_until` to current time plus 86,400 seconds. A visit after 24 continuous hours of inactivity increments again. The separate `expires_at` is a 90-day inactivity retention deadline. Lambda compares deadlines explicitly; DynamoDB TTL is only asynchronous cleanup. Conditional writes and transactions prevent concurrent eligible requests from incrementing twice.
+
+The existing table, API Gateway HTTP API, Python Lambda, HMAC secret, and Terraform-managed permissions are reused. No new endpoint or infrastructure is introduced.
 
 ## API behavior
 
-- `GET /visits` returns `{"count": number, "registrationSupported": true}` on the enhanced backend and does not change the aggregate. A legacy backend returns only `count`; the frontend treats the missing capability marker as read-only mode.
-- `POST /visits` sends `{"visitorId":"<canonical UUID v4>"}` and returns `{"counted": boolean, "count": number, "returning": boolean}`. Responses are not cacheable.
-- The enhanced backend answers legacy bodyless POSTs with `{"counted": false, "count": number}` without tracking or incrementing. This compatibility response is deliberately maintained until a planned breaking API change after legacy clients are no longer supported.
-- On registration failure the page falls back to GET to show the current aggregate. Retry repeats the read only; it does not create another registration request.
-- The component deduplicates registration across StrictMode effect replay. The backend also makes retries/concurrent requests safe using conditional updates and transactions.
-- A new browser increments the aggregate. Later requests refresh `active_until` by 24 hours and `expires_at` by the configured 90-day retention. A request at or after `active_until` increments the aggregate. At or after `expires_at`, it also resets that browser's retained history and returning status, even if DynamoDB TTL has not deleted the item yet.
-- Existing API Gateway throttling remains enabled. CORS allows only configured portfolio origins but does not authenticate API callers.
-
-The `visitors` aggregate includes older counts recorded with IP-derived keys, so the number is historical recorded visits across two counting methods. It is not a historical count of unique browsers or people. Private visitor history is available only through restricted DynamoDB/AWS access; no public history endpoint exists.
+- `GET /visits` returns `count` and, on the enhanced backend, `registrationSupported: true`. A legacy backend without the capability marker is display-only.
+- `POST /visits` sends `{"visitorId":"<canonical UUID v4>"}` and returns `counted`, `count`, and `returning`.
+- A successful GET count remains visible if registration fails. An initial GET failure offers a read-only retry; it does not trigger registration.
+- StrictMode effect replay shares in-flight registration work. A later page load/remount registers again to refresh the inactivity deadline.
+- The aggregate contains historical IP-derived counts and newer browser-token counts, so it is not a historical unique-browser or human count.
 
 ## Local checks
 
@@ -35,6 +41,4 @@ npm run build
 npm run test:ui
 ```
 
-Unit and browser tests use mocked API responses and do not update AWS. Do not run a production POST as a smoke test without authorization. A `GET /visits` is read-only.
-
-For rollout and rollback steps, see the [deployment runbook](../../docs/deployment-runbook.md) and [backend deployment guide](../../docs/backend-cicd.md).
+Tests use mocks and do not update AWS. Do not send a production POST as a smoke test. For rollout and rollback steps, see the [deployment runbook](../../docs/deployment-runbook.md) and [backend deployment guide](../../docs/backend-cicd.md).
