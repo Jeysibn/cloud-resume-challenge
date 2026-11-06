@@ -19,6 +19,7 @@ import { SKILL_SPRITE, issuerMarks } from "../components/capabilities/skillMarks
 import { ProjectIndex } from "../components/projects/ProjectIndex";
 import { Magnet } from "../components/hero/Magnet";
 import { Monogram } from "../components/hero/Monogram";
+import { VisitorCounter } from "../components/VisitorCounter";
 
 function Section({
   id,
@@ -93,6 +94,7 @@ export function Hero() {
           LinkedIn <Arrow dir="out" />
         </a>
       </div>
+      <VisitorCounter />
       <dl className="hero-facts">
         <div>
           <dt>Based in</dt>

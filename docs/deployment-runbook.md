@@ -8,7 +8,7 @@ This guide publishes frontend files to the existing V2 website. It does not crea
 2. Open a pull request to `main`. GitHub Actions runs the frontend checks; the AWS deploy job is skipped for pull requests.
 3. Merge the pull request only after its checks pass.
 
-For a visitor-counter API change, deploy the backend through Terraform first, then deploy the frontend. The new frontend expects the backend's `{counted, count}` POST response.
+For a visitor-counter API change, first back up/recoverably record the existing table/state and aggregate count. Review the Terraform plan and deploy the compatible backend before the frontend. `GET /visits` returns `{ count, registrationSupported: true }`; enhanced clients send `POST /visits` with `{ "visitorId": "<UUID v4>" }` only after consent and capability detection, receiving `{ counted, count, returning }`. Older clients can keep displaying the aggregate: their bodyless POST receives `{ counted: false, count }` without registration. Enhanced clients talking to an older backend use GET only because the capability flag is absent. Both mixed-version cases have a temporary registration gap and never silently fall back to IP-derived tracking on the enhanced backend/client.
 
 ## Start a deployment
 
@@ -27,7 +27,7 @@ Wait for both workflow jobs to pass. Then open the [live site](https://jeysibn.d
 curl -i https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com/visits
 ```
 
-Expect HTTP 200 and JSON containing a numeric `count`. This GET does not change the count. A POST may increment the real counter once per source IP during the 24-hour window; do not send one just to test deployment.
+Expect HTTP 200 and JSON containing a numeric `count`. This GET does not change the count. Do not send a production POST as a smoke test; it can change the real aggregate. Use the consent flow on the live site only when authorized to do so.
 
 CloudFront invalidation can take time to finish propagating after the workflow succeeds. If the page still looks old, check the invalidation and wait before starting another deployment.
 
@@ -36,8 +36,11 @@ CloudFront invalidation can take time to finish propagating after the workflow s
 - If `build-and-test` fails, read the failing step and fix the source before merging or deploying again.
 - If `Deploy V2 to AWS` fails, inspect the failed step and current workflow run. Do not run `terraform destroy` or retry blindly; asset uploads may have partly completed.
 - To roll back a broken frontend, revert the frontend change through Git, merge the revert to `main`, then manually run the workflow again. The workflow uploads new assets and replaces `index.html` last; it does not delete old hashed assets.
+- Keep the enhanced backend during frontend rollback. Rolling back only the backend to the legacy IP-based handler while enhanced pages remain cached/open can cause an opted-in UUID POST to be treated as an IP-derived registration. Roll back the frontend first and allow cached/open pages to drain before considering a backend rollback. Keep all visitor records and the historical aggregate when rolling back.
 
 Terraform infrastructure changes use a separate reviewed Terraform plan and are not part of this frontend deployment workflow.
+
+For backend/frontend rollback ordering and the effect of rolling back only one side, see [backend CI and deployment](backend-cicd.md#rollback).
 
 ## Version 1
 

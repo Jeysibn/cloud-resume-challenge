@@ -1,17 +1,27 @@
-"""V2 contract checks with a mocked SDK; no credentials or AWS calls."""
+"""V2 visitor analytics checks; all DynamoDB calls are in-memory or mocked."""
+
+import copy
 import hashlib
 import hmac
 import importlib.util
 import json
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Lock
 from types import ModuleType, SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
+from botocore.exceptions import ClientError
+
 SOURCE = Path(__file__).resolve().parents[1] / "lambda-v2" / "lambda_function.py"
-ENV = {"TABLE_NAME": "test-v2-table", "IP_HASH_SECRET": "test-secret"}
+ENV = {
+    "TABLE_NAME": "test-v2-table",
+    "VISITOR_ID_HMAC_SECRET": "test-secret",
+    "VISIT_WINDOW_SECONDS": "86400",
+    "VISITOR_RETENTION_SECONDS": "7776000",
+}
+VISITOR_ID = "8f14e45f-ea8d-4e9b-8e5d-2b3f9d822f10"
 
 
 class TransactionCanceled(Exception):
@@ -19,235 +29,341 @@ class TransactionCanceled(Exception):
         self.response = {"CancellationReasons": reasons}
 
 
-class ClientError(Exception):
-    pass
-
-
 class AtomicDynamoDB:
-    """Small, locked transaction fake for concurrency and persistence checks."""
+    """Locked fake implementing just the handler's atomic DynamoDB operations."""
+
     def __init__(self, count):
         self.count = count
-        self.ip_records = {}
+        self.records = {}
         self.lock = Lock()
-
-    def transact_write_items(self, TransactItems):
-        put, update = (action["Put"] if "Put" in action else action["Update"]
-                       for action in TransactItems)
-        ip_key = put["Item"]["id"]["S"]
-        now = int(put["ExpressionAttributeValues"][":now"]["N"])
-        expires_at = int(put["Item"]["expires_at"]["N"])
-        with self.lock:
-            duplicate = self.ip_records.get(ip_key, 0) > now
-            missing_counter = self.count is None
-            if duplicate or missing_counter:
-                raise TransactionCanceled([
-                    {"Code": "ConditionalCheckFailed" if duplicate else "None"},
-                    {"Code": "ConditionalCheckFailed" if missing_counter else "None"},
-                ])
-            self.ip_records[ip_key] = expires_at
-            self.count += int(update["ExpressionAttributeValues"][":inc"]["N"])
+        self.fail_next_transaction = False
 
     def get_item(self, Key, ConsistentRead):
         with self.lock:
-            if Key["id"] != "visitors" or self.count is None:
-                return {}
-            return {"Item": {"count": self.count}}
+            if Key["id"] == "visitors":
+                return {} if self.count is None else {"Item": {"count": self.count}}
+            record = self.records.get(Key["id"])
+            return {} if record is None else {"Item": copy.deepcopy(record)}
+
+    def update_item(self, Key, **kwargs):
+        with self.lock:
+            item = self.records.get(Key["id"])
+            values = kwargs["ExpressionAttributeValues"]
+            if (
+                item is None
+                or item["active_until"] <= values[":now"]
+                or item["active_until"] != values[":previous_active"]
+                or item["last_seen_at"] != values[":previous_last"]
+            ):
+                raise ClientError(
+                    {"Error": {"Code": "ConditionalCheckFailedException"}},
+                    "UpdateItem",
+                )
+            item["last_seen_at"] = values[":seen"]
+            item["active_until"] = values[":active"]
+            item["expires_at"] = values[":expiry"]
+            item["is_returning"] = values[":true"]
+            item["page_loads"] += values[":one"]
+            return {}
+
+    def transact_write_items(self, TransactItems, ClientRequestToken):
+        if len(ClientRequestToken) != 32:
+            raise AssertionError("DynamoDB transaction idempotency token must be a UUID")
+        with self.lock:
+            if self.fail_next_transaction:
+                self.fail_next_transaction = False
+                raise RuntimeError("temporary DynamoDB failure")
+            first, aggregate = TransactItems
+            aggregate_key = aggregate["Update"]["Key"]["id"]["S"]
+            if aggregate_key != "visitors" or self.count is None:
+                raise TransactionCanceled([
+                    {"Code": "None"}, {"Code": "ConditionalCheckFailed"}
+                ])
+
+            if "Put" in first:
+                action = first["Put"]
+                raw = action["Item"]
+                key = raw["id"]["S"]
+                if key in self.records:
+                    raise TransactionCanceled([
+                        {"Code": "ConditionalCheckFailed"}, {"Code": "None"}
+                    ])
+                self.records[key] = {
+                    "id": key,
+                    "first_seen_at": int(raw["first_seen_at"]["N"]),
+                    "last_seen_at": int(raw["last_seen_at"]["N"]),
+                    "active_until": int(raw["active_until"]["N"]),
+                    "page_loads": int(raw["page_loads"]["N"]),
+                    "counted_visits": int(raw["counted_visits"]["N"]),
+                    "is_returning": raw["is_returning"]["BOOL"],
+                    "expires_at": int(raw["expires_at"]["N"]),
+                }
+            else:
+                action = first["Update"]
+                key = action["Key"]["id"]["S"]
+                item = self.records.get(key)
+                now = int(action["ExpressionAttributeValues"][":now"]["N"])
+                if (
+                    item is None
+                    or item.get("active_until", 0) > now
+                    or item.get("last_seen_at", 0) > now
+                ):
+                    raise TransactionCanceled([
+                        {"Code": "ConditionalCheckFailed"}, {"Code": "None"}
+                    ])
+                item["last_seen_at"] = now
+                item["active_until"] = int(
+                    action["ExpressionAttributeValues"][":active"]["N"]
+                )
+                item["expires_at"] = int(
+                    action["ExpressionAttributeValues"][":expiry"]["N"]
+                )
+                item["page_loads"] += 1
+                item["counted_visits"] += 1
+                item["is_returning"] = True
+
+            self.count += 1
 
 
 class V2HandlerTests(unittest.TestCase):
     def load_handler(self, environment=None):
-        environment = ENV.copy() if environment is None else environment
-        self.table = Mock()
-        self.table.name = environment["TABLE_NAME"]
+        env = ENV.copy() if environment is None else environment
         self.client = Mock()
-        self.table.meta = SimpleNamespace(
-            client=self.client,
-        )
         self.client.exceptions = SimpleNamespace(
             TransactionCanceledException=TransactionCanceled
         )
+        self.table = Mock()
+        self.table.name = env["TABLE_NAME"]
+        self.table.meta = SimpleNamespace(client=self.client)
         resource = Mock()
         resource.Table.return_value = self.table
-        boto3 = ModuleType("boto3")
-        boto3.resource = Mock(return_value=resource)
+        fake_boto3 = ModuleType("boto3")
+        fake_boto3.resource = Mock(return_value=resource)
+        fake_boto3.client = Mock(return_value=self.client)
         spec = importlib.util.spec_from_file_location("v2_lambda", SOURCE)
         module = importlib.util.module_from_spec(spec)
-        with patch.dict("sys.modules", {"boto3": boto3}), patch.dict(
-            "os.environ", environment, clear=True
+        with patch.dict("sys.modules", {"boto3": fake_boto3}), patch.dict(
+            "os.environ", env, clear=True
         ):
             spec.loader.exec_module(module)
-        resource.Table.assert_called_once_with(environment["TABLE_NAME"])
         return module
 
     @staticmethod
-    def post_event(source_ip="203.0.113.7", headers=None):
+    def post_event(visitor_id=VISITOR_ID):
         event = {"requestContext": {"http": {"method": "POST"}}}
-        if source_ip is not ...:
-            event["requestContext"]["http"]["sourceIp"] = source_ip
-        if headers is not None:
-            event["headers"] = headers
+        if visitor_id is not ...:
+            event["body"] = json.dumps({"visitorId": visitor_id})
         return event
-
-    def assert_count_response(self, result, count, counted):
-        self.assertEqual(result["statusCode"], 200)
-        self.assertEqual(json.loads(result["body"]), {"counted": counted, "count": count})
 
     def use_atomic_fake(self, count):
         fake = AtomicDynamoDB(count)
         self.client.transact_write_items.side_effect = fake.transact_write_items
         self.table.get_item.side_effect = fake.get_item
+        self.table.update_item.side_effect = fake.update_item
         return fake
 
-    def test_missing_table_or_secret_fails_loudly(self):
-        with self.assertRaisesRegex(KeyError, "TABLE_NAME"):
-            self.load_handler({})
-        with self.assertRaisesRegex(KeyError, "IP_HASH_SECRET"):
-            self.load_handler({"TABLE_NAME": "test-v2-table"})
+    def post_at(self, module, timestamp, visitor_id=VISITOR_ID):
+        with patch.object(module.time, "time", return_value=timestamp):
+            return module.lambda_handler(self.post_event(visitor_id), None)
 
-    def test_get_reads_counter_consistently_without_writing(self):
+    def payload(self, result):
+        return json.loads(result["body"])
+
+    def test_first_visit_increments_history_and_stores_only_hmac(self):
         module = self.load_handler()
-        self.table.get_item.return_value = {"Item": {"count": 8}}
-        result = module.lambda_handler(
-            {"requestContext": {"http": {"method": "GET"}}}, None
-        )
+        fake = self.use_atomic_fake(41)
+        result = self.post_at(module, 1_800_000_000)
+        digest = hmac.new(b"test-secret", VISITOR_ID.encode(), hashlib.sha256).hexdigest()
+        item = fake.records[f"visitor#{digest}"]
         self.assertEqual(result["statusCode"], 200)
-        self.assertEqual(json.loads(result["body"]), {"count": 8})
-        self.table.get_item.assert_called_once_with(
-            Key={"id": "visitors"}, ConsistentRead=True
-        )
-        self.client.transact_write_items.assert_not_called()
-
-    def test_missing_counter_get_returns_404(self):
-        module = self.load_handler()
-        self.table.get_item.return_value = {}
-        result = module.lambda_handler(
-            {"requestContext": {"http": {"method": "GET"}}}, None
-        )
-        self.assertEqual(result["statusCode"], 404)
-        self.client.transact_write_items.assert_not_called()
-
-    def test_first_visit_is_counted_atomically_and_stores_only_hmac(self):
-        module = self.load_handler()
-        self.table.get_item.return_value = {"Item": {"count": 9}}
-        with patch.object(module.time, "time", return_value=1_700_000_000):
-            result = module.lambda_handler(self.post_event(), None)
-
-        self.assert_count_response(result, 9, True)
-        args = self.client.transact_write_items.call_args.kwargs
-        self.assertEqual(len(args["TransactItems"]), 2)
-        put, update = args["TransactItems"]
-        digest = hmac.new(b"test-secret", b"203.0.113.7", hashlib.sha256).hexdigest()
-        self.assertEqual(put["Put"]["Item"], {
-            "id": {"S": f"ip#{digest}"}, "expires_at": {"N": "1700086400"}
+        self.assertEqual(self.payload(result), {
+            "counted": True, "count": 42, "returning": False
         })
-        self.assertEqual(put["Put"]["ConditionExpression"],
-                         "attribute_not_exists(#id) OR #exp <= :now")
-        self.assertEqual(put["Put"]["ExpressionAttributeValues"][":now"], {"N": "1700000000"})
-        self.assertEqual(update["Update"]["Key"], {"id": {"S": "visitors"}})
-        self.assertEqual(update["Update"]["UpdateExpression"], "SET #count = #count + :inc")
-        self.assertEqual(update["Update"]["ConditionExpression"], "attribute_exists(#id)")
-        self.assertEqual(update["Update"]["ExpressionAttributeValues"][":inc"], {"N": "1"})
-        self.assertNotIn("203.0.113.7", repr(args))
-        self.table.get_item.assert_called_once_with(
-            Key={"id": "visitors"}, ConsistentRead=True
-        )
+        self.assertEqual(item, {
+            "id": f"visitor#{digest}",
+            "first_seen_at": 1_800_000_000,
+            "last_seen_at": 1_800_000_000,
+            "active_until": 1_800_086_400,
+            "page_loads": 1,
+            "counted_visits": 1,
+            "is_returning": False,
+            "expires_at": 1_807_776_000,
+        })
+        self.assertNotIn(VISITOR_ID, repr(item))
+        self.assertEqual(result["headers"]["cache-control"], "no-store, max-age=0")
 
-    def test_repeat_visit_returns_unchanged_count(self):
+    def test_active_revisits_do_not_count_and_extend_window_and_retention(self):
         module = self.load_handler()
-        fake = self.use_atomic_fake(9)
-        first = module.lambda_handler(self.post_event(), None)
-        second = module.lambda_handler(self.post_event(), None)
-        self.assert_count_response(first, 10, True)
-        self.assert_count_response(second, 10, False)
-        self.assertEqual(fake.count, 10)
+        fake = self.use_atomic_fake(3)
+        first = self.post_at(module, 1_800_000_000)
+        second = self.post_at(module, 1_800_000_000 + 8 * 3600)
+        third = self.post_at(module, 1_800_000_000 + 31 * 3600)
+        item = next(iter(fake.records.values()))
+        self.assertEqual([self.payload(x)["counted"] for x in (first, second, third)], [True, False, False])
+        self.assertEqual(fake.count, 4)
+        self.assertEqual(item["first_seen_at"], 1_800_000_000)
+        self.assertEqual(item["last_seen_at"], 1_800_111_600)
+        self.assertEqual(item["active_until"], 1_800_198_000)
+        self.assertEqual(item["expires_at"], 1_807_887_600)
+        self.assertEqual(item["page_loads"], 3)
+        self.assertEqual(item["counted_visits"], 1)
+        self.assertTrue(item["is_returning"])
 
-    def test_concurrent_requests_from_one_ip_increment_once(self):
+    def test_exactly_24_hours_qualifies_but_just_before_does_not(self):
         module = self.load_handler()
-        fake = self.use_atomic_fake(25)
+        fake = self.use_atomic_fake(0)
+        self.post_at(module, 1_800_000_000)
+        before = self.post_at(module, 1_800_086_399)
+        at_boundary = self.post_at(module, 1_800_172_799)
+        self.assertFalse(self.payload(before)["counted"])
+        self.assertTrue(self.payload(at_boundary)["counted"])
+        self.assertEqual(fake.count, 2)
+
+    def test_more_than_24_hours_and_expired_but_present_record_qualify(self):
+        module = self.load_handler()
+        fake = self.use_atomic_fake(7)
+        self.post_at(module, 1_800_000_000)
+        item = next(iter(fake.records.values()))
+        item["active_until"] = 1_800_000_000
+        item["expires_at"] = 1_800_000_001
+        result = self.post_at(module, 1_800_000_001)
+        self.assertTrue(self.payload(result)["counted"])
+        self.assertEqual(fake.count, 9)
+        self.assertEqual(item["expires_at"], 1_807_776_001)
+
+    def test_expired_record_after_ttl_deadline_still_uses_explicit_window(self):
+        module = self.load_handler()
+        fake = self.use_atomic_fake(0)
+        self.post_at(module, 1000)
+        item = next(iter(fake.records.values()))
+        item["expires_at"] = 1001
+        item["active_until"] = 1001
+        result = self.post_at(module, 1002)
+        self.assertTrue(self.payload(result)["counted"])
+        self.assertEqual(item["active_until"], 87402)
+        self.assertEqual(item["expires_at"], 7_777_002)
+
+    def test_concurrent_requests_count_first_eligible_visit_once(self):
+        module = self.load_handler()
+        fake = self.use_atomic_fake(20)
         with ThreadPoolExecutor(max_workers=12) as pool:
-            results = list(pool.map(
-                lambda _: module.lambda_handler(self.post_event(), None), range(40)
-            ))
+            results = list(pool.map(lambda _: self.post_at(module, 1_800_000_000), range(40)))
+        bodies = [self.payload(result) for result in results]
+        self.assertEqual(sum(body["counted"] for body in bodies), 1)
+        self.assertTrue(all(body["count"] == 21 for body in bodies))
+        self.assertEqual(fake.count, 21)
+        self.assertEqual(len(fake.records), 1)
+        self.assertEqual(next(iter(fake.records.values()))["page_loads"], 40)
 
-        payloads = [json.loads(result["body"]) for result in results]
-        self.assertEqual(sum(payload["counted"] for payload in payloads), 1)
-        self.assertTrue(all(payload["count"] == 26 for payload in payloads))
-        self.assertEqual(fake.count, 26)
-        self.assertEqual(len(fake.ip_records), 1)
-
-    def test_expired_record_is_replaceable_at_current_time(self):
-        module = self.load_handler({**ENV, "VISIT_TTL_SECONDS": "120"})
-        fake = self.use_atomic_fake(10)
-        digest = hmac.new(b"test-secret", b"203.0.113.7", hashlib.sha256).hexdigest()
-        fake.ip_records[f"ip#{digest}"] = 1_700_000_099
-        with patch.object(module.time, "time", return_value=1_700_000_100):
-            result = module.lambda_handler(self.post_event(), None)
-        self.assert_count_response(result, 11, True)
-        put = self.client.transact_write_items.call_args.kwargs["TransactItems"][0]["Put"]
-        self.assertEqual(put["ExpressionAttributeValues"][":now"], {"N": "1700000100"})
-        self.assertEqual(put["Item"]["expires_at"], {"N": "1700000220"})
-        self.assertEqual(fake.count, 11)
-        self.assertEqual(fake.ip_records[f"ip#{digest}"], 1_700_000_220)
-
-    def test_ipv6_addresses_in_same_64_share_digest(self):
+    def test_concurrent_revisit_at_expiry_counts_once(self):
         module = self.load_handler()
-        self.table.get_item.return_value = {"Item": {"count": 1}}
-        for address in ("2001:db8:abcd:12::1", "2001:db8:abcd:12:ffff::9"):
-            module.lambda_handler(self.post_event(address), None)
-        puts = [call.kwargs["TransactItems"][0]["Put"]["Item"]["id"]["S"]
-                for call in self.client.transact_write_items.call_args_list]
-        digest = hmac.new(b"test-secret", b"2001:db8:abcd:12::/64", hashlib.sha256).hexdigest()
-        self.assertEqual(puts, [f"ip#{digest}", f"ip#{digest}"])
+        fake = self.use_atomic_fake(2)
+        self.post_at(module, 1_800_000_000)
+        with ThreadPoolExecutor(max_workers=10) as pool:
+            results = list(pool.map(lambda _: self.post_at(module, 1_800_086_400), range(25)))
+        bodies = [self.payload(result) for result in results]
+        self.assertEqual(sum(body["counted"] for body in bodies), 1)
+        self.assertTrue(all(body["count"] == 4 for body in bodies))
+        item = next(iter(fake.records.values()))
+        self.assertEqual(item["page_loads"], 26)
+        self.assertEqual(item["counted_visits"], 2)
 
-    def test_missing_or_invalid_source_ip_returns_400_without_writes(self):
+    def test_historical_aggregate_is_read_without_reset(self):
         module = self.load_handler()
-        for event in (self.post_event(source_ip=...), self.post_event("not an ip")):
-            result = module.lambda_handler(event, None)
-            self.assertEqual(result["statusCode"], 400)
-        self.client.transact_write_items.assert_not_called()
-        self.table.get_item.assert_not_called()
+        fake = self.use_atomic_fake(1284)
+        result = self.post_at(module, 1_800_000_000)
+        self.assertEqual(self.payload(result)["count"], 1285)
+        self.assertEqual(fake.count, 1285)
 
-    def test_forwarded_for_header_is_ignored(self):
-        module = self.load_handler()
-        self.table.get_item.return_value = {"Item": {"count": 4}}
-        module.lambda_handler(self.post_event(headers={"x-forwarded-for": "198.51.100.88"}), None)
-        item_id = self.client.transact_write_items.call_args.kwargs["TransactItems"][0]["Put"]["Item"]["id"]["S"]
-        digest = hmac.new(b"test-secret", b"203.0.113.7", hashlib.sha256).hexdigest()
-        self.assertEqual(item_id, f"ip#{digest}")
-
-    def test_missing_counter_cancels_transaction_without_partial_ip_write(self):
+    def test_missing_aggregate_cancels_new_visitor_transaction(self):
         module = self.load_handler()
         fake = self.use_atomic_fake(None)
-        result = module.lambda_handler(self.post_event(), None)
+        result = self.post_at(module, 1_800_000_000)
         self.assertEqual(result["statusCode"], 404)
-        self.assertEqual(json.loads(result["body"]), {"error": "Visitor counter not found"})
+        self.assertEqual(fake.records, {})
+
+    def test_invalid_payloads_are_rejected_without_database_access(self):
+        module = self.load_handler()
+        events = [
+            {"requestContext": {"http": {"method": "POST"}}, "body": "{"},
+            {"requestContext": {"http": {"method": "POST"}}, "body": " " * 2049},
+            self.post_event("not-a-uuid"),
+            self.post_event("00000000-0000-0000-0000-000000000000"),
+            {"requestContext": {"http": {"method": "POST"}}, "body": json.dumps({"visitorId": VISITOR_ID, "other": 1})},
+        ]
+        for event in events:
+            self.assertEqual(module.lambda_handler(event, None)["statusCode"], 400)
         self.table.get_item.assert_not_called()
-        # DynamoDB transaction atomicity means the first Put is rolled back.
-        self.assertEqual(len(self.client.transact_write_items.call_args.kwargs["TransactItems"]), 2)
-        self.assertEqual(fake.ip_records, {})
-        self.table.put_item.assert_not_called()
+        self.client.transact_write_items.assert_not_called()
+
+    def test_database_failure_returns_503_without_success_claim(self):
+        module = self.load_handler()
+        fake = self.use_atomic_fake(0)
+        fake.fail_next_transaction = True
+        result = self.post_at(module, 1_800_000_000)
+        self.assertEqual(result["statusCode"], 503)
+        self.assertNotIn("counted", self.payload(result))
+        self.assertEqual(fake.count, 0)
+        self.assertEqual(fake.records, {})
+
+    def test_active_visit_write_failure_returns_503_without_success_claim(self):
+        module = self.load_handler()
+        fake = self.use_atomic_fake(0)
+        self.post_at(module, 1_800_000_000)
+        item = next(iter(fake.records.values()))
+        before = copy.deepcopy(item)
+        self.table.update_item.side_effect = ClientError(
+            {"Error": {"Code": "InternalServerError"}}, "UpdateItem"
+        )
+
+        result = self.post_at(module, 1_800_000_001)
+
+        self.assertEqual(result["statusCode"], 503)
+        self.assertNotIn("counted", self.payload(result))
+        self.assertEqual(item, before)
+        self.assertEqual(fake.count, 1)
+
+    def test_get_is_consistent_read_and_failures_are_explicit(self):
+        module = self.load_handler()
+        self.table.get_item.return_value = {"Item": {"count": 11}}
+        result = module.lambda_handler({"requestContext": {"http": {"method": "GET"}}}, None)
+        self.assertEqual(self.payload(result), {"count": 11, "registrationSupported": True})
+        self.table.get_item.assert_called_once_with(Key={"id": "visitors"}, ConsistentRead=True)
+        self.table.get_item.side_effect = RuntimeError("unavailable")
+        self.assertEqual(module.lambda_handler({"requestContext": {"http": {"method": "GET"}}}, None)["statusCode"], 503)
+
+    def test_legacy_bodyless_post_returns_count_without_tracking(self):
+        module = self.load_handler()
+        fake = self.use_atomic_fake(91)
+        result = self.post_at(module, 1_800_000_000, visitor_id=...)
+        self.assertEqual(result["statusCode"], 200)
+        self.assertEqual(self.payload(result), {"counted": False, "count": 91})
+        self.assertEqual(fake.records, {})
+        self.client.transact_write_items.assert_not_called()
         self.table.update_item.assert_not_called()
 
-    def test_unknown_cancellation_reason_and_other_errors_propagate(self):
+    def test_late_request_cannot_move_seen_or_deadline_backwards(self):
         module = self.load_handler()
-        for error in (
-            TransactionCanceled([{"Code": "None"}, {"Code": "None"}]),
-            ClientError("AWS client error"),
-        ):
-            self.client.transact_write_items.side_effect = error
-            with self.assertRaises(type(error)):
-                module.lambda_handler(self.post_event(), None)
+        fake = self.use_atomic_fake(12)
+        self.post_at(module, 1_800_000_000)
+        self.post_at(module, 1_800_000_100)
+        item = next(iter(fake.records.values()))
+        before = (item["last_seen_at"], item["active_until"], item["expires_at"])
 
-    def test_invalid_ttl_is_rejected_at_import(self):
-        for value in ("0", "-1", "one-day"):
-            with self.subTest(value=value), self.assertRaises(ValueError):
-                self.load_handler({**ENV, "VISIT_TTL_SECONDS": value})
+        late = self.post_at(module, 1_800_000_001)
 
-    def test_other_methods_return_405(self):
-        module = self.load_handler()
-        result = module.lambda_handler({"requestContext": {"http": {"method": "PUT"}}}, None)
-        self.assertEqual(result["statusCode"], 405)
-        self.client.transact_write_items.assert_not_called()
+        self.assertEqual(self.payload(late)["counted"], False)
+        self.assertEqual(
+            (item["last_seen_at"], item["active_until"], item["expires_at"]),
+            before,
+        )
+        self.assertEqual(item["page_loads"], 3)
+
+    def test_missing_secret_and_nonpositive_retention_fail_at_startup(self):
+        with self.assertRaises(KeyError):
+            self.load_handler({"TABLE_NAME": "table"})
+        with self.assertRaisesRegex(ValueError, "positive"):
+            self.load_handler({**ENV, "VISITOR_RETENTION_SECONDS": "0"})
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # Validation and current status
 
-This page distinguishes local checks from live AWS checks. The unique-IP counter change is validated locally; no AWS resources or live API were accessed during its implementation.
+This page distinguishes historical checks from current local checks and live AWS operations. The visitor analytics enhancement is locally validated; no production deployment, production POST, Terraform apply, or resource modification has been performed.
 
 ## Local checks for the current source
 
@@ -82,6 +82,43 @@ The CloudFront distribution remains the delivery layer behind the custom domain.
 ## Dependency audit
 
 The latest recorded `npm audit` on 2026-11-01 found 12 moderate issues in development tooling; `npm audit --omit=dev` found none in production dependencies. See the [dependency security check](../frontend/app/DEPENDENCY-SECURITY-REVIEW.md) for details and recheck commands. This audit is separate from the build and test results above.
+
+## Visitor analytics enhancement checks on November 6, 2026
+
+The feature branch was validated locally. No production POST, Terraform plan, Terraform apply, or AWS resource modification was performed.
+
+| Command | Result |
+| --- | --- |
+| `/tmp/crc-visitor-venv/bin/python -m unittest discover -s backend/tests -v` | Passed: 26 tests, including V1 source-provenance checks and V2 rolling-window, TTL, transaction, error, and concurrency tests. |
+| `/tmp/crc-visitor-venv/bin/python -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py` | Passed. |
+| `/tmp/crc-visitor-venv/bin/python backend/lambda-v2/package.py` | Passed; verified the generated Lambda ZIP. |
+| `npm run typecheck` | Passed. |
+| `npm run lint` | Passed. |
+| `npm test -- --run` | Passed: 78 tests across 16 files. |
+| `npm run build` | Passed. |
+| `npm run test:metadata` | Passed. |
+| `npm run perf:budget` | Passed. |
+| `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4184 npm run test:ui -- --workers=2` | Passed: 67 passed, 23 skipped. Includes the 1440, 1024, 768, 390, and 320px counter layout checks, keyboard/accessibility checks, and the updated visual snapshot. |
+| `terraform fmt -check -recursive .` and `terraform validate -no-color` | Passed. |
+
+The aggregate `npm run validate:ci` command initially reused an unrelated portfolio preview already listening on its default port 4173; that caused false browser failures against the wrong site. The browser suite was rerun against this checkout's built frontend on a dedicated local port and passed. These checks do not establish live AWS behavior; use the gated rollout in [backend-cicd.md](backend-cicd.md) after owner approval.
+
+## Compatibility and final hardening checks on November 7, 2026
+
+The final pass added version negotiation for mixed frontend/backend rollout, read-only handling for legacy bodyless POST requests, monotonic active-visit timestamps, and idempotency tokens on transactional retries. The aggregate remains initialized outside Terraform and tests confirm its historical value is preserved. No production POST, deployment, Terraform apply, or AWS resource modification was performed.
+
+| Command | Result |
+| --- | --- |
+| `/tmp/crc-visitor-venv/bin/python -m unittest discover -s backend/tests -v` | Passed: 29 backend/V1 tests, including legacy POST compatibility, strict UUID validation, 24-hour boundary, late requests, concurrency, DynamoDB failures, and historical count preservation. |
+| `/tmp/crc-visitor-venv/bin/python -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py` | Passed. |
+| `/tmp/crc-visitor-venv/bin/python backend/lambda-v2/package.py` | Passed; package contains the current handler. |
+| `npm run typecheck`, `npm run lint`, `npm test -- --run`, `npm run build`, `npm run test:metadata`, `npm run perf:budget` | Passed; 81 frontend unit tests across 16 files. |
+| `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4184 npm run test:ui -- --workers=2` | Passed: 67 passed, 23 skipped. The preview ran from this checkout; hero visibility, counter consent, API compatibility, accessibility, reduced motion, and 1440/1024/768/390/320px layout checks were exercised. |
+| `terraform fmt -check -recursive .`, `terraform validate -no-color` | Passed. |
+| Read-only `aws sts get-caller-identity` | Passed. |
+| Read-only Terraform plan to a `/tmp` output path | Not produced: the required `ip_hash_secret` Terraform input was unavailable. No AWS session-expiry error was reported and no plan was applied. |
+
+The two pre-existing untracked plan artifacts under `infra/terraform/` were kept untouched and excluded from staging. Terraform validation does not prove the production plan is safe. Before release, provide the existing secret through the approved secure mechanism, generate a fresh plan in a private temporary path, and review every action as described in [backend-cicd.md](backend-cicd.md).
 
 ## Version 1 history
 

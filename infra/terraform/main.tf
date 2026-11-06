@@ -4,7 +4,7 @@ locals {
 }
 
 variable "ip_hash_secret" {
-  description = "Secret key used to HMAC visitor IP prefixes before storing them in DynamoDB."
+  description = "Existing HMAC key used to derive anonymous browser visitor keys stored in DynamoDB. Keep the value stable across deployments."
   type        = string
   sensitive   = true
 }
@@ -176,9 +176,10 @@ resource "aws_lambda_function" "visitor" {
 
   environment {
     variables = {
-      TABLE_NAME        = aws_dynamodb_table.visitors.name
-      IP_HASH_SECRET    = var.ip_hash_secret
-      VISIT_TTL_SECONDS = "86400"
+      TABLE_NAME                = aws_dynamodb_table.visitors.name
+      VISITOR_ID_HMAC_SECRET    = var.ip_hash_secret
+      VISIT_WINDOW_SECONDS      = "86400"
+      VISITOR_RETENTION_SECONDS = "7776000"
     }
   }
 

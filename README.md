@@ -13,7 +13,7 @@ flowchart LR
     Website[Private S3 website bucket]
     API[API Gateway HTTP API]
     Lambda[Python Lambda]
-    Counter[(DynamoDB counter)]
+    Counter[(DynamoDB aggregate and browser records)]
     Actions[GitHub Actions on main]
 
     Browser -->|https://jeysibn.dev| CloudFront
@@ -25,7 +25,7 @@ flowchart LR
     Actions -->|Requests cache refresh| CloudFront
 ```
 
-CloudFront delivers the website files. It reads them from a private S3 bucket through Origin Access Control (OAC). The browser calls API Gateway directly for the counter: `GET /visits` reads the count, and clicking **Record My Visit** sends `POST /visits` to increase it. The count is recorded actions, not unique people.
+CloudFront delivers the website files. It reads them from a private S3 bucket through Origin Access Control (OAC). The browser calls API Gateway directly: `GET /visits` reads the aggregate, and `POST /visits` registers an opted-in browser ID. The ID is HMAC-derived before storage; a rolling 24-hour inactivity window controls when a registration increases the historical aggregate.
 
 Terraform creates and configures the V2 AWS resources. The DynamoDB table is managed by Terraform, while its starting counter item is initialized separately. Terraform also stores its V2 state in a dedicated S3 bucket and key.
 
@@ -64,7 +64,7 @@ Edit `.env.local` and set the public API URL:
 VITE_API_BASE_URL=https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com
 ```
 
-This URL is public website configuration, not a secret. Never put AWS credentials in a `VITE_*` variable.
+This URL is public website configuration, not a secret. Never put AWS credentials in a `VITE_*` variable. Local registration is disabled until you opt in; if you opt in while developing, your browser can affect the live aggregate.
 
 Start the local development server and open the address Vite prints (usually `http://localhost:5173`):
 

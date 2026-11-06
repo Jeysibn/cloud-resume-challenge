@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { fetchVisitorCount, registerVisit } from "./api";
+import { fetchVisitorCount, fetchVisitorStatus, registerVisit } from "./api";
 
 beforeEach(() => vi.stubEnv("VITE_API_BASE_URL", "https://example.test///"));
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
@@ -8,7 +8,23 @@ it.each([0, 42])("reads valid count %s", async count => {
   const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ count })));
   vi.stubGlobal("fetch", fetch);
   await expect(fetchVisitorCount()).resolves.toBe(count);
-  expect(fetch).toHaveBeenCalledExactlyOnceWith("https://example.test/visits", { method: "GET", signal: undefined });
+  expect(fetch).toHaveBeenCalledExactlyOnceWith("https://example.test/visits", {
+    method: "GET", signal: undefined, cache: "no-store", headers: undefined, body: undefined,
+  });
+});
+
+it("uses the new capability marker and treats an old backend as read-only", async () => {
+  vi.stubGlobal("fetch", vi.fn()
+    .mockResolvedValueOnce(new Response(JSON.stringify({ count: 42, registrationSupported: true })))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ count: 42 }))));
+  await expect(fetchVisitorStatus()).resolves.toEqual({
+    count: 42,
+    supportsBrowserRegistration: true,
+  });
+  await expect(fetchVisitorStatus()).resolves.toEqual({
+    count: 42,
+    supportsBrowserRegistration: false,
+  });
 });
 
 it.each([null, {}, { count: -1 }, { count: 1.5 }, { count: "2" }])("rejects invalid count %j", async payload => {
@@ -32,16 +48,20 @@ it("handles network and HTTP failure", async () => {
   await expect(fetchVisitorCount()).rejects.toThrow("HTTP 503");
 });
 
-it("registers a visit and validates the response", async () => {
-  const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ counted: true, count: 43 })));
+it("registers a visit with its browser identifier and validates the response", async () => {
+  const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ counted: true, count: 43, returning: false })));
   vi.stubGlobal("fetch", fetch);
-  await expect(registerVisit()).resolves.toEqual({ counted: true, count: 43 });
-  expect(fetch).toHaveBeenCalledExactlyOnceWith("https://example.test/visits", { method: "POST", signal: undefined });
+  const visitorId = "123e4567-e89b-42d3-a456-426614174000";
+  await expect(registerVisit(visitorId)).resolves.toEqual({ counted: true, count: 43, returning: false });
+  expect(fetch).toHaveBeenCalledExactlyOnceWith("https://example.test/visits", {
+    method: "POST", signal: undefined, cache: "no-store", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ visitorId }),
+  });
 });
 
-it.each([null, {}, { counted: 1, count: 1 }, { counted: true, count: -1 }, { counted: false, count: 1.2 }])(
+it.each([null, {}, { counted: 1, count: 1, returning: false }, { counted: true, count: -1, returning: false }, { counted: false, count: 1.2, returning: false }, { counted: true, count: 1 }])(
   "rejects invalid registration payload %j", async payload => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(payload))));
-    await expect(registerVisit()).rejects.toThrow("invalid registration");
+    await expect(registerVisit("123e4567-e89b-42d3-a456-426614174000")).rejects.toThrow("invalid registration");
   },
 );

@@ -1,23 +1,26 @@
 # Visitor counter integration
 
-The V2 website calls an API Gateway HTTP API directly. The build-time setting `VITE_API_BASE_URL` contains the API base address, without `/visits`:
+The V2 website calls the API Gateway HTTP API at `VITE_API_BASE_URL` without `/visits`. This is public configuration; never put AWS keys or private secrets in `VITE_*` variables.
 
-```text
-https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com
-```
+## Consent and browser storage
 
-Vite embeds this value in the built JavaScript. For local development, copy `.env.example` to `.env.local` and set the value there. For production, the GitHub Actions workflow supplies it during the build.
+The portfolio reads the public aggregate with `GET /visits`. Anonymous registration remains off until a visitor selects the explicit enable control. After opt-in, the browser creates a cryptographically random UUID v4 using `crypto.randomUUID()` and saves it in first-party `localStorage`. It sends the UUID only to `POST /visits`; Lambda stores a server-derived HMAC digest instead. The site provides an opt-out control that deletes the stored browser identifier and consent choice.
 
-## How the counter behaves
+If consent is not given, tracking is disabled, browser storage is blocked, or the identifier was cleared, the page still reads and displays the aggregate count but does not create or send an ID. Clearing site data may cause the same browser to be counted as new next time. A browser ID does not identify a person and can be copied or spoofed.
 
-- On page load, the website sends one `POST /visits` and displays the returned count. React StrictMode effect replay shares the same in-flight registration.
-- Lambda counts the source IP once per 24-hour window. It groups IPv6 addresses by `/64`, stores only an HMAC-SHA256 digest, and returns whether this request incremented the total.
-- If POST fails, the website falls back to `GET /visits` to display the current count. **Retry** only repeats this GET.
-- The POST is idempotent per IP and TTL window, so clients may safely retry it. The frontend does not automatically retry it.
+The short notice beside the control explains the purpose (recording aggregate page activity), random ID, HMAC storage, and 90-day inactivity retention. This opt-in is a privacy-conservative design decision, not a claim that one consent rule applies everywhere. The Philippines DPA requires transparent, lawful and proportionate processing, and consent cannot be assumed if relied on; browser storage may also fall under ePrivacy rules in some jurisdictions. See the [National Privacy Commission](https://privacy.gov.ph/data-privacy-act/), its [advisories and circulars](https://privacy.gov.ph/pips-and-pics/advisories-circulars/), and the [European Data Protection Board guidance](https://www.edpb.europa.eu/documents/guideline/guidelines-22023-on-technical-scope-of-art-53-of-eprivacy-directive_en). Requirements depend on context and location.
 
-This approximates unique public IPs per 24-hour window, not people. Shared NAT/CGNAT can undercount, while VPN or mobile IP rotation can overcount. Bots and crawlers that run JavaScript can be counted. The API remains public and unauthenticated, so it is not abuse protection.
+## API behavior
 
-The handler does not store or log raw IPs. HMAC hashes still raise privacy concerns and may remain personal data under some regimes. DynamoDB TTL deletes digest records after expiry, typically within 24–48 hours; the transaction checks `expires_at` so late TTL cleanup does not delay recounting.
+- `GET /visits` returns `{"count": number, "registrationSupported": true}` on the enhanced backend and does not change the aggregate. A legacy backend returns only `count`; the frontend treats the missing capability marker as read-only mode.
+- `POST /visits` sends `{"visitorId":"<canonical UUID v4>"}` and returns `{"counted": boolean, "count": number, "returning": boolean}`. Responses are not cacheable.
+- The enhanced backend answers legacy bodyless POSTs with `{"counted": false, "count": number}` without tracking or incrementing. This compatibility response is deliberately maintained until a planned breaking API change after legacy clients are no longer supported.
+- On registration failure the page falls back to GET to show the current aggregate. Retry repeats the read only; it does not create another registration request.
+- The component deduplicates registration across StrictMode effect replay. The backend also makes retries/concurrent requests safe using conditional updates and transactions.
+- A new browser increments the aggregate. Later requests refresh `active_until` by 24 hours and `expires_at` by the configured 90-day retention. A request at or after the deadline increments the aggregate.
+- Existing API Gateway throttling remains enabled. CORS allows only configured portfolio origins but does not authenticate API callers.
+
+The `visitors` aggregate includes older counts recorded with IP-derived keys, so the number is historical recorded visits across two counting methods. It is not a historical count of unique browsers or people. Private visitor history is available only through restricted DynamoDB/AWS access; no public history endpoint exists.
 
 ## Local checks
 
@@ -25,15 +28,13 @@ From `frontend/app`:
 
 ```bash
 npm ci
-cp .env.example .env.local
-# Set VITE_API_BASE_URL in .env.local.
 npm run typecheck
 npm run lint
 npm test -- --run
+npm run build
+npm run test:ui
 ```
 
-Unit tests mock API responses. They check the frontend's behavior but do not call AWS. A browser GET check against the live API is read-only; a POST changes the real DynamoDB count.
+Unit and browser tests use mocked API responses and do not update AWS. Do not run a production POST as a smoke test without authorization. A `GET /visits` is read-only.
 
-API Gateway is configured to allow the live CloudFront site and GET/POST. CORS tells browsers which site origins may read responses; it does not protect the public API from scripts or other non-browser callers. Never put AWS keys, tokens, or other secrets in `VITE_*` variables.
-
-To publish frontend changes, use the manual GitHub Actions process in the [deployment guide](../../docs/deployment-runbook.md). The retired V1 API and AWS project are not used by this integration.
+For rollout and rollback steps, see the [deployment runbook](../../docs/deployment-runbook.md) and [backend deployment guide](../../docs/backend-cicd.md).

@@ -10,7 +10,7 @@
 
 I built and deployed a personal portfolio website using AWS to gain hands-on experience with cloud infrastructure, serverless applications, and basic DevOps practices.
 
-The website displays my portfolio and includes a visitor counter that users can interact with.
+The website displays my portfolio and offers an opt-in anonymous browser visit counter.
 
 I divided the project into two versions. In Version 1, I manually configured AWS resources through the Management Console to understand how the services work. In Version 2, I recreated the infrastructure using Terraform and introduced GitHub Actions for automated code testing and frontend deployment.
 
@@ -32,8 +32,8 @@ I used AWS Lambda with Python to handle visitor counter requests without managin
 
 API Gateway exposes two endpoints:
 
-- `GET /visits` — retrieves the current visitor count.
-- `POST /visits` — increases the visitor count by one when the user clicks the Record My Visit button.
+- `GET /visits` — retrieves the public aggregate count.
+- `POST /visits` — registers an opted-in browser using a random UUID v4. Lambda stores only an HMAC-SHA256 digest. Every valid registration refreshes a rolling 24-hour inactivity deadline; an eligible visit increments the aggregate atomically with the visitor record.
 
 Both API routes connect to the same Lambda function.
 
@@ -41,9 +41,9 @@ I configured API Gateway CORS to allow the portfolio's custom domain (and the Cl
 
 **Database — Amazon DynamoDB**
 
-I used DynamoDB to store the visitor counter value.
+I use DynamoDB for the aggregate and private anonymous-browser activity records. The `visitors` count preserves its historical value. Each browser record tracks first and latest activity, page registrations, counted visits, and return status. Application-controlled `active_until` determines counting eligibility; a separate 90-day `expires_at` value drives asynchronous DynamoDB TTL cleanup.
 
-The Lambda execution role has IAM permissions to read and update the counter using `GetItem` and `UpdateItem`.
+The Lambda execution role has table-scoped `GetItem`, `PutItem`, and `UpdateItem` permissions for the aggregate and browser records.
 
 This allows the visitor count to remain saved even when the website is refreshed.
 
@@ -77,19 +77,11 @@ For backend changes, I run tests and manually deploy the updated Lambda package 
 
 ## 5. End-to-End Testing
 
-I tested the application using the deployed AWS environment.
+Historical live testing verified the former manual counter. It is evidence for the old behavior only, not for the current browser-ID registration or rolling window.
 
-Initially, the website displayed a visitor count of 0.
+The current implementation defaults tracking to off and reads the aggregate without registration. After opt-in, the browser stores a random UUID and the server stores an HMAC digest for up to 90 days after activity. Browser identifiers can be cleared, copied, or spoofed; they do not identify people. The preserved aggregate spans the former IP-based and new browser-based methods, so it is not a historical unique-browser count.
 
-After clicking the Record My Visit button, the count increased to 1.
-
-I verified that DynamoDB stored the value of 1 and that CloudWatch recorded the POST request.
-
-I then refreshed the website and confirmed that the count remained at 1.
-
-This demonstrated that the frontend, API Gateway, Lambda, and DynamoDB were communicating correctly and that the data was persisted.
-
-See the [validation record](validation.md#mission-91--visitor-counter-end-to-end-test) for the test results and screenshots.
+See the [validation record](validation.md#live-aws-evidence-from-november-1-2026) for historical live-test screenshots and the current local checks.
 
 ## 6. Challenges and Lessons Learned
 

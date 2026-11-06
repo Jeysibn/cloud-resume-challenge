@@ -2501,17 +2501,51 @@ html.theme-switching *::after {
   }
 }
 
-.visitor-counter { min-width: 0; overflow-wrap: anywhere; }
-.visitor-counter button { margin: 8px 8px 0 0; }
+.visitor-counter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  max-width: min(100%, 620px);
+  margin: clamp(16px, 2.2svh, 24px) auto 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.visitor-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 600;
+}
+.visitor-count svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.visitor-consent { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 12px; }
+.visitor-consent p, .visitor-message { flex-basis: 100%; margin: 0; }
 .visitor-counter button:disabled { opacity: 0.6; cursor: default; }
 
 .visitor-button {
   border: 1px solid var(--color-rule);
   background: transparent;
   color: var(--color-text);
-  padding: 12px;
-  min-height: 44px;
+  padding: 7px 11px;
+  min-height: 40px;
   font: 500 12px/1.4 var(--body);
   cursor: pointer;
 }
 .visitor-button:hover:not(:disabled) { background: var(--color-surface-hover); }
+.visitor-text-button {
+  min-height: 40px;
+  padding: 6px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font: 500 12px/1.4 var(--body);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.visitor-text-button:hover { color: var(--color-strong); }
