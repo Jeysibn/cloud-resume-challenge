@@ -26,7 +26,27 @@ The enhanced backend advertises `registrationSupported: true` in `GET /visits`. 
    aws sts get-caller-identity
    ```
 
-2. Confirm an owner-approved backup/recovery path for the existing DynamoDB table and Terraform state. Read `visitors.count` with AWS tooling and record its current value privately. Confirm the currently deployed frontend and backend contracts with read-only inspection. Do not reset the count.
+2. Confirm an owner-approved backup/recovery path for the existing DynamoDB table and V2 Terraform state. Read `visitors.count` with AWS tooling and record its current value privately. For example, this returns only the count value:
+
+   ```bash
+   aws dynamodb get-item \
+     --table-name cloud-resume-v2-visitor-counter \
+     --key '{"id":{"S":"visitors"}}' \
+     --consistent-read \
+     --projection-expression '#count' \
+     --expression-attribute-names '{"#count":"count"}' \
+     --query 'Item.count.N' --output text
+   ```
+
+   Open the live site with browser developer tools, do not opt in, and confirm the hero count displays using GET without a registration POST. Capture the currently deployed Lambda metadata without printing environment values:
+
+   ```bash
+   aws lambda get-function-configuration \
+     --function-name cloud-resume-v2-visitor-function \
+     --query '{State:State,LastModified:LastModified,Runtime:Runtime,VariableNames:keys(Environment.Variables)}'
+   ```
+
+   Note the recent Lambda `Errors`/`Throttles` and API Gateway 5xx metrics in CloudWatch as the baseline. Confirm the currently deployed frontend and backend contracts with read-only inspection. Do not reset the count.
 
 3. Supply the existing `TF_VAR_ip_hash_secret` through the approved secure mechanism and preserve its current value. Terraform reuses this existing secret as `VISITOR_ID_HMAC_SECRET`; it does not rotate the production secret. Terraform state and Lambda configuration contain secrets despite sensitive output redaction. Never commit or expose them to frontend build variables.
 
@@ -54,7 +74,16 @@ The enhanced backend advertises `registrationSupported: true` in `GET /visits`. 
    terraform apply "$PLAN_FILE"
    ```
 
-7. Verify with read-only checks first. `GET /visits` must return the existing count and `registrationSupported: true`. Inspect Lambda environment names and table TTL configuration through AWS tooling. Do not use a production POST unless separately authorized. Confirm legacy pages still display the count, that their bodyless POST returns `counted: false`, and that no record or count is changed. During this stage, those old pages have a documented temporary registration gap.
+7. Verify with read-only checks first:
+
+   ```bash
+   curl -fsS https://kfpwu0cd7k.execute-api.ap-southeast-2.amazonaws.com/visits
+   aws lambda get-function-configuration \
+     --function-name cloud-resume-v2-visitor-function \
+     --query '{State:State,LastModified:LastModified,Runtime:Runtime,VariableNames:keys(Environment.Variables)}'
+   ```
+
+   `GET /visits` must return the preserved count and `registrationSupported: true`. Confirm the table still has TTL enabled on `expires_at` through read-only AWS tooling, and check CloudWatch Lambda `Errors` plus API 5xx/4xx metrics for new failures. Do not print or share Lambda environment values or raw visitor IDs. A bodyless legacy POST is read-only in the enhanced handler, but do not send even that production POST without separate explicit authorization. Local tests already verify `{counted:false,count}` and no visitor write; the old frontend continues to display the count during the temporary registration gap.
 
 ### Stage C — Frontend enhancement
 
@@ -62,7 +91,15 @@ The enhanced backend advertises `registrationSupported: true` in `GET /visits`. 
 
 ### Stage D — Production verification
 
-9. Only with explicit authorization, perform controlled smoke tests using a consenting test browser. Verify valid registration, aggregate update, the HMAC-only visitor record, `first_seen_at`, monotonic `last_seen_at`, `page_loads`, `counted_visits`, and `expires_at`. Verify the rolling window and logical retention reset without waiting in production by using local tests or a controlled non-production fixture; do not alter production timestamps to simulate either deadline. Never inspect or log raw browser IDs. Confirm old bodyless clients do not create history or increment the aggregate.
+9. Only with explicit authorization, use one consenting test browser for this small smoke sequence. Record the aggregate privately immediately before the test.
+
+   1. Open the deployed page without opting in. Confirm the counter loads with GET only and there is no visitor ID or registration POST.
+   2. Opt in. Confirm one UUID registration succeeds, the aggregate increases once, and DynamoDB has one `visitor#<HMAC digest>` record with `first_seen_at`, `last_seen_at`, `active_until`, `page_loads`, `counted_visits`, `is_returning`, and `expires_at`. Inspect only the digest and fields; never expose the browser UUID.
+   3. Reload the page within 24 hours. Confirm `counted:false`, `returning:true`, updated activity/deadline fields, and no aggregate increment. A public GET continues to return the aggregate and does not modify it.
+   4. Opt out. Confirm the page stops new registration attempts and reports that a POST already sent may still complete. Confirm the local ID is removed when browser storage permits. Check that the aggregate remains unchanged by the opt-out itself.
+   5. Check CloudWatch Lambda `Errors` and API Gateway 5xx metrics for the test period. Compare the count against the private baseline plus the single expected registration.
+
+   Do not wait 24 hours or modify production timestamps to test expiry. Verify exactly-at-boundary counting and 90-day logical retention reset using local tests or a controlled non-production fixture. Verify legacy bodyless POST behavior locally; only test it against production after separate explicit authorization. Never inspect or log raw browser IDs.
 
 The frontend workflow uploads files and invalidates CloudFront only; it does not run Terraform. Terraform state is stored under the V2 backend and must never be replaced with V1 state.
 

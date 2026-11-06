@@ -139,6 +139,24 @@ The logical-retention reset, consent failure handling, registration-cache change
 
 The browser suite first detected the intentional privacy-notice text change against the old 1920px snapshot. The rendered result was inspected, the snapshot was refreshed, and the complete browser suite then passed. The PR Actions run after pushing the remediation is the remaining CI check; Terraform planning and authorized production verification remain release gates.
 
+## PR #14 release-preparation follow-up on November 7, 2026
+
+The final follow-up corrected the Playwright opt-in assertion to wait for its asynchronous request sequence and clarified that a registration already sent before opt-out may complete. The component test covers that in-flight behavior. The deployment runbook now records the observed GitHub workflow and repository-protection boundaries. No production request, deployment, Terraform plan/apply, or AWS resource modification was performed.
+
+| Command | Result |
+| --- | --- |
+| `/tmp/crc-visitor-venv/bin/python -m unittest discover -s backend/tests -v` | Passed: 34 backend/V1 tests. |
+| `/tmp/crc-visitor-venv/bin/python -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py` | Passed. |
+| From `frontend/app`: `npm run typecheck`, `npm run lint`, `npm test -- --run` | Passed; 91 tests across 16 files. |
+| From `frontend/app`: `npm run build`, `npm run test:metadata`, `npm run perf:budget` | Passed; bundle 278.3 KiB raw, 86.1 KiB gzip (180 KiB gzip budget). |
+| `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4327 npx playwright test --project=mobile-chromium -g 'registers only after opt-in, keeps a stable UUID and allows opt-out' --repeat-each=5 --workers=1` | Passed: 5/5 consecutive runs. |
+| `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4327 npx playwright test tests/ui/portfolio.spec.ts --workers=2` | Passed: 67 passed, 23 skipped. |
+| `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4327 npm run test:ui -- --workers=2` | Passed: 67 passed, 23 skipped; the full suite ran on this checkout's isolated preview. |
+| From `infra/terraform`: `terraform fmt -check -recursive .`, `terraform validate -no-color` | Passed. |
+| `git diff --check` | Passed. |
+
+AWS credentials were available for read-only identity and deployment-role inspection, but `TF_VAR_ip_hash_secret` was not available in the environment. No Terraform plan was generated; the production plan remains unverified. GitHub Actions run 42262396194 passed frontend and backend CI for its recorded head, with the deploy job skipped. Cleanup changes require a new exact-head CI run. As observed on November 7, the repository had no `main` branch protection/ruleset or Actions environment approval; the only production workflow is manually dispatched on `main` and its deployment role is scoped to frontend S3 uploads and CloudFront invalidation. See [deployment runbook](deployment-runbook.md#workflow-and-aws-access-boundary).
+
 ## Version 1 history
 
 V1 was manually deployed in an older AWS project that is now closed. Its 2026-10-30 tests and observations are historical; they are not proof of current V2 behavior. See [architecture](architecture.md) for the current system and V1 distinction.

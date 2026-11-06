@@ -249,6 +249,7 @@ export function VisitorCounter() {
       </div>}
       {consent === "accepted" && <button type="button" className="visitor-text-button" onClick={() => chooseConsent("declined")}>Turn off visit counting</button>}
       {consent === "declined" && <button type="button" className="visitor-text-button" onClick={() => chooseConsent("accepted")}>Enable anonymous counting</button>}
+      {consent === "declined" && <p className="visitor-message" role="status">Visit counting is off for this page. A request already sent before you turned it off may still complete.</p>}
       {consent === "accepted" && registrationUnavailable && <p className="visitor-message" role="status">This counter service does not support browser registration yet. The public count is available; no visit was registered.</p>}
       {storageUnavailable && <p className="visitor-message" role="status">Browser storage is unavailable. The public count remains available; registration requires a saved opt-in.</p>}
       {consentWarning && <p className="visitor-message" role="status">{consentWarning}</p>}

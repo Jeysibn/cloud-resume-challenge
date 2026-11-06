@@ -485,7 +485,7 @@ test.describe("mobile portfolio interactions", () => {
     await expect(counter.getByRole("button", { name: "Turn off visit counting" })).toBeVisible();
     const visitorId = await page.evaluate(() => localStorage.getItem("jeysibn.visitor-id.v1"));
     expect(visitorId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-    expect(publicApiStubs.get(page)?.methods).toEqual(["GET", "GET", "POST"]);
+    await expect.poll(() => publicApiStubs.get(page)?.methods).toEqual(["GET", "GET", "POST"]);
     await counter.getByRole("button", { name: "Turn off visit counting" }).click();
     await expect(counter.getByRole("button", { name: "Enable anonymous counting" })).toBeVisible();
     expect(await page.evaluate(() => localStorage.getItem("jeysibn.visitor-id.v1"))).toBeNull();

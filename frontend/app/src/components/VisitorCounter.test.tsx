@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { VisitorCounter } from "./VisitorCounter";
 import { fetchVisitorCount, fetchVisitorStatus, registerVisit } from "../api";
@@ -97,7 +97,29 @@ it("turns off tracking and removes the persistent identifier", async () => {
   await screen.findByRole("button", { name: "Enable anonymous counting" });
   expect(window.localStorage.getItem("jeysibn.visitor-id.v1")).toBeNull();
   expect(window.localStorage.getItem("jeysibn.visitor-counting-consent.v1")).toBe("declined");
+  expect(screen.getByText(/A request already sent before you turned it off may still complete/)).toBeInTheDocument();
   expect(fetchVisitorCount).toHaveBeenCalledTimes(1);
+});
+
+it("keeps the page opted out if a registration sent before opt-out later resolves", async () => {
+  window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
+  window.localStorage.setItem("jeysibn.visitor-id.v1", "123e4567-e89b-42d3-a456-426614174027");
+  let resolveRegistration!: (result: { counted: boolean; count: number; returning: boolean }) => void;
+  vi.mocked(registerVisit).mockReturnValueOnce(new Promise(resolve => { resolveRegistration = resolve; }));
+  render(<VisitorCounter />);
+
+  await vi.waitFor(() => expect(registerVisit).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByRole("button", { name: "Turn off visit counting" }));
+  await screen.findByRole("button", { name: "Enable anonymous counting" });
+
+  await act(async () => {
+    resolveRegistration({ counted: true, count: 43, returning: false });
+  });
+
+  expect(screen.getByRole("button", { name: "Enable anonymous counting" })).toBeInTheDocument();
+  expect(screen.getByText(/A request already sent before you turned it off may still complete/)).toBeInTheDocument();
+  expect(screen.queryByText("43 recorded visits")).not.toBeInTheDocument();
+  expect(registerVisit).toHaveBeenCalledTimes(1);
 });
 
 it("does not start registration when consent is withdrawn while capability lookup is pending", async () => {

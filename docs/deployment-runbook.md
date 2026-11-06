@@ -12,6 +12,12 @@ For a visitor-counter API change, first back up/recoverably record the existing 
 
 ## Start a deployment
 
+### Workflow and AWS access boundary
+
+Merging a pull request to `main` does not deploy AWS resources: **V2 Portfolio CI/CD** runs checks for pull requests and has a separate `workflow_dispatch` trigger. Its deploy job runs only for a manual dispatch on `main`; rerunning such a `main` dispatch can publish again. The job uses GitHub OIDC. The AWS role is restricted to listing and uploading website-bucket objects and creating invalidations for the configured CloudFront distribution; it cannot deploy Lambda, change DynamoDB, or apply Terraform.
+
+As checked on November 7, 2026, the repository has no `main` branch protection/ruleset or GitHub Actions environment approval, and the workflow has no deployment concurrency group. GitHub reports CI results, but they are not enforced by branch protection. The owner must review and authorize a manual production dispatch, confirm the current repository protections, and avoid overlapping deployment runs. Backend Terraform apply remains a separate, manually authorized operation.
+
 1. Open the repository’s **Actions** tab on GitHub.
 2. Select **V2 Portfolio CI/CD**.
 3. Select **Run workflow**, choose branch `main`, and start the run.
