@@ -1,15 +1,19 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fetchVisitorStatus, isApiConfigured, registerVisit } from "../api";
 
 const VISITOR_KEY = "jeysibn.visitor-id.v1";
+const CONSENT_KEY = "jeysibn.visitor-counting-consent.v1";
+const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const registrations = new Map<string, Promise<Awaited<ReturnType<typeof registerVisit>>>>();
 
 function visitorId(): string | null {
   try {
+    if (window.localStorage.getItem(CONSENT_KEY) === "declined") return null;
     const existing = window.localStorage.getItem(VISITOR_KEY);
-    if (existing && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(existing)) return existing;
+    if (existing && UUID_V4.test(existing)) return existing;
     if (typeof crypto === "undefined" || !crypto.randomUUID) return null;
     const next = crypto.randomUUID();
+    if (!UUID_V4.test(next)) return null;
     window.localStorage.setItem(VISITOR_KEY, next);
     return window.localStorage.getItem(VISITOR_KEY) === next ? next : null;
   } catch {
@@ -29,41 +33,54 @@ function registerOnce(id: string) {
 }
 
 export function VisitorCounter() {
-  const [count, setCount] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
   const configured = isApiConfigured();
+  const [count, setCount] = useState<number | null>(null);
+  const [loading, setLoading] = useState(configured);
+  const [error, setError] = useState(false);
+
+  const loadCount = useCallback(async (signal?: AbortSignal, register = true) => {
+    try {
+      const status = await fetchVisitorStatus(signal);
+      if (signal?.aborted) return;
+      setCount(status.count);
+      if (register && status.supportsBrowserRegistration) {
+        const id = visitorId();
+        if (id) {
+          try {
+            const result = await registerOnce(id);
+            if (!signal?.aborted) setCount(result.count);
+          } catch {
+            // Keep the successfully fetched total visible if registration fails.
+          }
+        }
+      }
+    } catch {
+      if (!signal?.aborted) setError(true);
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
+    if (!configured) return;
     const controller = new AbortController();
-    if (configured) {
-      void (async () => {
-        try {
-          const status = await fetchVisitorStatus(controller.signal);
-          if (!active) return;
-          setCount(status.count);
-          setLoading(false);
-          const id = status.supportsBrowserRegistration ? visitorId() : null;
-          if (id) {
-            const result = await registerOnce(id);
-            if (active) setCount(result.count);
-          }
-        } catch {
-          // A failed registration leaves the last successfully read total visible.
-        } finally {
-          if (active) setLoading(false);
-        }
-      })();
-    } else setLoading(false);
-    return () => { active = false; controller.abort(); };
-  }, [configured]);
+    void Promise.resolve().then(() => loadCount(controller.signal));
+    return () => controller.abort();
+  }, [configured, loadCount]);
+
+  function retryCount() {
+    setLoading(true);
+    setError(false);
+    void loadCount(undefined, false);
+  }
 
   return (
     <div className="visitor-counter" aria-label="Visitor count">
       <p className="visitor-count" role="status" aria-busy={loading}>
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>
-        <span>{!configured || count === null && !loading ? "Recorded visits unavailable" : loading ? "Loading recorded visits" : `${count!.toLocaleString()} recorded visits`}</span>
+        <span>{!configured || error && count === null ? "Recorded visits unavailable" : loading && count === null ? "Loading recorded visits" : count === null ? "Recorded visits unavailable" : `${count.toLocaleString()} recorded visits`}</span>
       </p>
+      {error && <div className="visitor-message" role="alert">The visitor count could not be loaded. <button type="button" className="visitor-text-button" onClick={retryCount}>Retry</button></div>}
     </div>
   );
 }
