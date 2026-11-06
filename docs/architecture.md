@@ -18,8 +18,8 @@ flowchart LR
     B -->|https://jeysibn.dev| CF
     CF -->|Private access through OAC| S3
     B --> C
-    C -->|GET count then POST visit with UUID| API
-    B -->|GET /visits for count or fallback| API
+    B -->|GET /visits for count| API
+    C -->|POST /visits with UUID when supported| API
     API --> L
     L -->|Conditional updates and atomic transactions| DB
     GH -->|OIDC role uploads files| S3
@@ -85,9 +85,9 @@ Estimate for `ap-southeast-2` (Sydney), USD, using AWS public on-demand prices c
 
 | Page loads/month | HTTP API requests | Lambda invocations | DynamoDB reads (RRUs) | DynamoDB writes (WRUs, eligible upper bound) | Estimated added monthly cost |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 100 | 200 | 200 | 300 | 400 | ~$0.00032 |
-| 1,000 | 2,000 | 2,000 | 3,000 | 4,000 | ~$0.0032 |
-| 10,000 | 20,000 | 20,000 | 30,000 | 40,000 | ~$0.032 |
+| 100 | 200 | 200 | 300 | 400 | ~$0.00053 |
+| 1,000 | 2,000 | 2,000 | 3,000 | 4,000 | ~$0.0053 |
+| 10,000 | 20,000 | 20,000 | 30,000 | 40,000 | ~$0.053 |
 
 At these volumes, extending `expires_at` on every return visit adds one standard write request unit per visit. It is needed to retain the HMAC record for the stated 90-day inactivity retention; `active_until` independently extends by 86,400 seconds on each recognized active visit. DynamoDB TTL is asynchronous cleanup, not the eligibility check. The estimates exclude data transfer, CloudWatch logs, storage and account-level charges. They assume $1 per million HTTP API calls and DynamoDB unit rates in AWS's published pricing example; use the AWS Pricing Calculator or actual Sydney bill line items for a region-specific quote. See AWS [API Gateway pricing](https://aws.amazon.com/api-gateway/pricing/), [Lambda pricing](https://aws.amazon.com/lambda/pricing/), [DynamoDB pricing](https://aws.amazon.com/dynamodb/pricing/), and the [DynamoDB read/write unit rules](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html).
 
