@@ -33,7 +33,7 @@ Backend and frontend tests use mocks and do not modify AWS or the live counter. 
 
 ## Previous live validation (historical behavior)
 
-The following evidence predates the unique-IP change and validated the former **Record My Visit** button flow. It does not prove the current automatic registration or TTL behavior.
+The following evidence predates the browser-ID enhancement and validated the former **Record My Visit** button flow. It does not prove the current opt-in registration, rolling window, logical retention reset, or TTL behavior.
 
 ### Mission 9.1 — Previous Visitor Counter End-to-End Test
 
@@ -43,7 +43,7 @@ The following evidence predates the unique-IP change and validated the former **
 
 **Result:** PASS for the button-click counter then deployed
 
-The earlier test clicked **Record My Visit**, observed the count increase by one, confirmed the DynamoDB count, and refreshed the page. Those results describe the old behavior only. A new post-deployment smoke check should send two POSTs from the same machine: the first should return `counted: true`, the second `counted: false`; verify the DynamoDB `ip#...` item has numeric `expires_at`.
+The earlier test clicked **Record My Visit**, observed the count increase by one, confirmed the DynamoDB count, and refreshed the page. Those results describe the old behavior only and are not a procedure for testing the browser-ID implementation.
 
 Screenshots from the prior live test:
 
@@ -53,7 +53,7 @@ Screenshots from the prior live test:
 
 ![DynamoDB visitor counter item with count 1](images/testing/dynamodb-visitor-count.png)
 
-The old live checks reported the homepage and GET endpoint working and had no production POST during the initial deployment. The November 1 button test later sent a production POST. No current live API check has been performed for the unique-IP change.
+The old live checks reported the homepage and GET endpoint working and had no production POST during the initial deployment. The November 1 button test later sent a production POST. No live API check has been performed for the browser-ID enhancement.
 
 ### Custom domain and follow-up counter check
 
@@ -119,6 +119,25 @@ The final pass added version negotiation for mixed frontend/backend rollout, rea
 | Read-only Terraform plan to a `/tmp` output path | Not produced: the required `ip_hash_secret` Terraform input was unavailable. No AWS session-expiry error was reported and no plan was applied. |
 
 The two pre-existing untracked plan artifacts under `infra/terraform/` were kept untouched and excluded from staging. Terraform validation does not prove the production plan is safe. Before release, provide the existing secret through the approved secure mechanism, generate a fresh plan in a private temporary path, and review every action as described in [backend-cicd.md](backend-cicd.md).
+
+## PR #14 remediation checks on November 7, 2026
+
+The logical-retention reset, consent failure handling, registration-cache changes, and current-`main` integration were checked locally. Tests use isolated mocks or a local preview. No AWS request, Terraform plan, apply, or production resource modification was performed for this remediation.
+
+| Command | Result |
+| --- | --- |
+| `/tmp/crc-visitor-venv/bin/python -m unittest discover -s backend/tests -v` | Passed: 34 tests, including V1 source-provenance checks and V2 rolling-window, logical retention reset, TTL deletion races, transaction conflicts, concurrency, compatibility, and serialization checks. |
+| `/tmp/crc-visitor-venv/bin/python -m py_compile backend/lambda-v2/lambda_function.py backend/lambda-v2/package.py` | Passed. |
+| `/tmp/crc-visitor-venv/bin/python backend/lambda-v2/package.py` | Passed; verified the current Lambda ZIP. |
+| `npm run typecheck` and `npm run lint` | Passed. |
+| `npm test -- --run` | Passed: 90 frontend tests across 16 files. |
+| `npm run build` | Passed. |
+| `npm run test:metadata` and `npm run perf:budget` | Passed. |
+| `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4184 npm run test:ui -- --workers=2` | Passed: 67 passed, 23 skipped. The suite used this checkout's preview on isolated port 4184 and covered the hero, consent, keyboard/accessibility, reduced motion, and representative responsive widths. |
+| `terraform fmt -check -recursive` from `infra/terraform` | Passed. |
+| `terraform validate -no-color` from `infra/terraform` | Passed. |
+
+The browser suite first detected the intentional privacy-notice text change against the old 1920px snapshot. The rendered result was inspected, the snapshot was refreshed, and the complete browser suite then passed. The PR Actions run after pushing the remediation is the remaining CI check; Terraform planning and authorized production verification remain release gates.
 
 ## Version 1 history
 

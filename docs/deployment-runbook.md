@@ -36,7 +36,7 @@ CloudFront invalidation can take time to finish propagating after the workflow s
 - If `build-and-test` fails, read the failing step and fix the source before merging or deploying again.
 - If `Deploy V2 to AWS` fails, inspect the failed step and current workflow run. Do not run `terraform destroy` or retry blindly; asset uploads may have partly completed.
 - To roll back a broken frontend, revert the frontend change through Git, merge the revert to `main`, then manually run the workflow again. The workflow uploads new assets and replaces `index.html` last; it does not delete old hashed assets.
-- Keep the enhanced backend during frontend rollback. Rolling back only the backend to the legacy IP-based handler while enhanced pages remain cached/open can cause an opted-in UUID POST to be treated as an IP-derived registration. Roll back the frontend first and allow cached/open pages to drain before considering a backend rollback. Keep all visitor records and the historical aggregate when rolling back.
+- Keep the enhanced backend during frontend rollback. A legacy backend may treat an opted-in UUID POST as an IP-derived registration if a capability GET was completed before rollback or an older page sends a request later. Cached/open pages can outlive a rollout, so waiting for them to drain is not a complete guarantee. No registration-disable switch exists. Roll back the frontend first and retain the enhanced backend; consider legacy-backend restoration only as an explicitly approved privacy and counting behavior change. Keep all visitor records and the historical aggregate.
 
 Terraform infrastructure changes use a separate reviewed Terraform plan and are not part of this frontend deployment workflow.
 

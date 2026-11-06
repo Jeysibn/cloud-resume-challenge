@@ -79,7 +79,7 @@ For backend changes, I run tests and manually deploy the updated Lambda package 
 
 Historical live testing verified the former manual counter. It is evidence for the old behavior only, not for the current browser-ID registration or rolling window.
 
-The current implementation defaults tracking to off and reads the aggregate without registration. After opt-in, the browser stores a random UUID and the server stores an HMAC digest for up to 90 days after activity. Browser identifiers can be cleared, copied, or spoofed; they do not identify people. The preserved aggregate spans the former IP-based and new browser-based methods, so it is not a historical unique-browser count.
+The current implementation defaults tracking to off and reads the aggregate without registration. After opt-in, the browser stores a random UUID and the server stores an HMAC digest with a 90-day logical inactivity-retention deadline. A request after that deadline starts a fresh visitor-history period even if DynamoDB has not yet deleted the expired item. The browser ID remains in first-party storage until opt-out or site-data clearing. Browser identifiers can be cleared, copied, or spoofed; they do not identify people. The preserved aggregate spans the former IP-based and new browser-based methods, so it is not a historical unique-browser count.
 
 See the [validation record](validation.md#live-aws-evidence-from-november-1-2026) for historical live-test screenshots and the current local checks.
 

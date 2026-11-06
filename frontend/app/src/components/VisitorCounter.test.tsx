@@ -20,16 +20,28 @@ beforeEach(() => {
   vi.mocked(fetchVisitorCount).mockResolvedValue(42);
   vi.mocked(fetchVisitorStatus).mockResolvedValue({ count: 42, supportsBrowserRegistration: true });
 });
-afterEach(() => { cleanup(); vi.resetAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.resetAllMocks(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 it("shows the public count without creating an identifier before opt-in", async () => {
   render(<VisitorCounter />);
   await screen.findByText("42 recorded visits");
-  expect(screen.getByText(/Portfolio owner Jerome Ibon/)).toBeInTheDocument();
+  expect(screen.getByText(/Used for aggregate visit counting/)).toBeInTheDocument();
   expect(registerVisit).not.toHaveBeenCalled();
   expect(fetchVisitorStatus).not.toHaveBeenCalled();
   expect(window.localStorage.getItem("jeysibn.visitor-id.v1")).toBeNull();
   expect(fetchVisitorCount).toHaveBeenCalledTimes(1);
+});
+
+it("keeps GET-only display when a declined preference is loaded", async () => {
+  window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "declined");
+  render(<VisitorCounter />);
+
+  await screen.findByText("42 recorded visits");
+
+  expect(fetchVisitorCount).toHaveBeenCalledTimes(1);
+  expect(fetchVisitorStatus).not.toHaveBeenCalled();
+  expect(registerVisit).not.toHaveBeenCalled();
+  expect(window.localStorage.getItem("jeysibn.visitor-id.v1")).toBeNull();
 });
 
 it("registers only after opt-in and keeps the chosen identifier", async () => {
@@ -86,6 +98,126 @@ it("turns off tracking and removes the persistent identifier", async () => {
   expect(window.localStorage.getItem("jeysibn.visitor-id.v1")).toBeNull();
   expect(window.localStorage.getItem("jeysibn.visitor-counting-consent.v1")).toBe("declined");
   expect(fetchVisitorCount).toHaveBeenCalledTimes(1);
+});
+
+it("does not start registration when consent is withdrawn while capability lookup is pending", async () => {
+  window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
+  window.localStorage.setItem("jeysibn.visitor-id.v1", "123e4567-e89b-42d3-a456-426614174020");
+  let resolveStatus!: (value: { count: number; supportsBrowserRegistration: boolean }) => void;
+  vi.mocked(fetchVisitorStatus).mockReturnValueOnce(new Promise(resolve => { resolveStatus = resolve; }));
+  render(<VisitorCounter />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Turn off visit counting" }));
+  await screen.findByRole("button", { name: "Enable anonymous counting" });
+  resolveStatus({ count: 42, supportsBrowserRegistration: true });
+  await Promise.resolve();
+
+  expect(registerVisit).not.toHaveBeenCalled();
+});
+
+it("keeps tracking off for this page and saves the choice when ID removal fails", async () => {
+  window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
+  window.localStorage.setItem("jeysibn.visitor-id.v1", "123e4567-e89b-42d3-a456-426614174021");
+  render(<VisitorCounter />);
+  await screen.findByRole("button", { name: "Turn off visit counting" });
+  const removeItem = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+    throw new DOMException("Blocked");
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Turn off visit counting" }));
+
+  await screen.findByRole("button", { name: "Enable anonymous counting" });
+  expect(registerVisit).toHaveBeenCalledTimes(1);
+  expect(window.localStorage.getItem("jeysibn.visitor-counting-consent.v1")).toBe("declined");
+  expect(window.localStorage.getItem("jeysibn.visitor-id.v1")).toBe("123e4567-e89b-42d3-a456-426614174021");
+  expect(screen.getByText(/could not remove/i)).toBeInTheDocument();
+  removeItem.mockRestore();
+});
+
+it("does not resume tracking after decline persistence fails but ID removal succeeds", async () => {
+  window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
+  window.localStorage.setItem("jeysibn.visitor-id.v1", "123e4567-e89b-42d3-a456-426614174022");
+  const view = render(<VisitorCounter />);
+  await screen.findByRole("button", { name: "Turn off visit counting" });
+  const originalSetItem = Storage.prototype.setItem;
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+    if (key === "jeysibn.visitor-counting-consent.v1" && value === "declined") {
+      throw new DOMException("Blocked");
+    }
+    return originalSetItem.call(this, key, value);
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Turn off visit counting" }));
+
+  await screen.findByRole("button", { name: "Enable anonymous counting" });
+  expect(window.localStorage.getItem("jeysibn.visitor-id.v1")).toBeNull();
+  expect(window.localStorage.getItem("jeysibn.visitor-counting-consent.v1")).toBe("accepted");
+  expect(screen.getByText(/may not stay off after reload/i)).toBeInTheDocument();
+  const registrationCount = vi.mocked(registerVisit).mock.calls.length;
+
+  view.unmount();
+  render(<VisitorCounter />);
+  await screen.findByRole("button", { name: "Allow anonymous counting" });
+  expect(registerVisit).toHaveBeenCalledTimes(registrationCount);
+});
+
+it("fails closed when both opt-out storage operations fail", async () => {
+  window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
+  window.localStorage.setItem("jeysibn.visitor-id.v1", "123e4567-e89b-42d3-a456-426614174023");
+  render(<VisitorCounter />);
+  await screen.findByRole("button", { name: "Turn off visit counting" });
+  vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => { throw new DOMException("Blocked"); });
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("Blocked"); });
+
+  fireEvent.click(screen.getByRole("button", { name: "Turn off visit counting" }));
+
+  await screen.findByRole("button", { name: "Enable anonymous counting" });
+  expect(registerVisit).toHaveBeenCalledTimes(1);
+  expect(window.localStorage.getItem("jeysibn.visitor-counting-consent.v1")).toBe("accepted");
+  expect(window.localStorage.getItem("jeysibn.visitor-id.v1")).toBe("123e4567-e89b-42d3-a456-426614174023");
+  expect(screen.getByText(/may not stay off after reload/i)).toBeInTheDocument();
+});
+
+it("does not register stored acceptance when storage is readable but not writable", async () => {
+  window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
+  window.localStorage.setItem("jeysibn.visitor-id.v1", "123e4567-e89b-42d3-a456-426614174024");
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("Blocked"); });
+  render(<VisitorCounter />);
+
+  await screen.findByText("42 recorded visits");
+  expect(registerVisit).not.toHaveBeenCalled();
+  expect(fetchVisitorCount).toHaveBeenCalledTimes(1);
+  expect(screen.getByText(/Browser storage is unavailable/)).toBeInTheDocument();
+});
+
+it("retries a rejected registration after the component remounts", async () => {
+  window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
+  window.localStorage.setItem("jeysibn.visitor-id.v1", "123e4567-e89b-42d3-a456-426614174025");
+  vi.mocked(registerVisit).mockRejectedValueOnce(Error("Transient failure"));
+  const view = render(<VisitorCounter />);
+  await screen.findByText("42 recorded visits");
+  expect(registerVisit).toHaveBeenCalledTimes(1);
+
+  view.unmount();
+  render(<VisitorCounter />);
+  await screen.findByRole("button", { name: "Turn off visit counting" });
+  expect(registerVisit).toHaveBeenCalledTimes(2);
+});
+
+it("allows a new eligible registration after the successful cache window", async () => {
+  window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "accepted");
+  window.localStorage.setItem("jeysibn.visitor-id.v1", "123e4567-e89b-42d3-a456-426614174026");
+  let now = 10_000;
+  vi.spyOn(Date, "now").mockImplementation(() => now);
+  const view = render(<VisitorCounter />);
+  await screen.findByText("42 recorded visits");
+  expect(registerVisit).toHaveBeenCalledTimes(1);
+
+  view.unmount();
+  now += 86_400_001;
+  render(<VisitorCounter />);
+  await screen.findByRole("button", { name: "Turn off visit counting" });
+  expect(registerVisit).toHaveBeenCalledTimes(2);
 });
 
 it("does not POST to a legacy backend that lacks browser registration support", async () => {

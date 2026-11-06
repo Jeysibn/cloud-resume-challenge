@@ -3,9 +3,17 @@ import { fetchVisitorCount, fetchVisitorStatus, isApiConfigured, registerVisit }
 
 const CONSENT_KEY = "jeysibn.visitor-counting-consent.v1";
 const VISITOR_KEY = "jeysibn.visitor-id.v1";
+const REGISTRATION_CACHE_WINDOW_MS = 86_400_000;
+const VISITOR_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 type Consent = "accepted" | "declined" | null;
 
-const registrations = new Map<string, ReturnType<typeof registerVisit>>();
+type RegistrationEntry = {
+  promise: ReturnType<typeof registerVisit>;
+  startedAt: number;
+  settled: boolean;
+};
+
+const registrations = new Map<string, RegistrationEntry>();
 
 function storage(): Storage | null {
   try {
@@ -16,9 +24,14 @@ function storage(): Storage | null {
 }
 
 function readConsent(): Consent {
+  const store = storage();
+  if (!store) return null;
   try {
-    const value = storage()?.getItem(CONSENT_KEY);
-    return value === "accepted" ? "accepted" : value === "declined" ? "declined" : null;
+    const value = store.getItem(CONSENT_KEY);
+    if (value === "declined") return "declined";
+    if (value !== "accepted") return null;
+    const visitorId = store.getItem(VISITOR_KEY);
+    return visitorId ? "accepted" : null;
   } catch {
     return null;
   }
@@ -29,6 +42,7 @@ function canReadStorage(): boolean {
   if (!store) return false;
   try {
     store.getItem(CONSENT_KEY);
+    store.getItem(VISITOR_KEY);
     return true;
   } catch {
     return false;
@@ -37,27 +51,46 @@ function canReadStorage(): boolean {
 
 function visitorIdForOptedInBrowser(): string | null {
   const store = storage();
-  if (!store || typeof crypto.randomUUID !== "function") return null;
+  if (!store) return null;
   try {
+    if (store.getItem(CONSENT_KEY) !== "accepted") return null;
     const saved = store.getItem(VISITOR_KEY);
-    if (saved && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(saved)) {
-      return saved;
+    const visitorId = saved && VISITOR_ID_PATTERN.test(saved)
+      ? saved
+      : typeof crypto === "undefined" || typeof crypto.randomUUID !== "function"
+        ? null
+        : crypto.randomUUID();
+    if (!visitorId) return null;
+    if (visitorId !== saved) {
+      store.setItem(VISITOR_KEY, visitorId);
+      if (store.getItem(VISITOR_KEY) !== visitorId) return null;
     }
-    const created = crypto.randomUUID();
-    store.setItem(VISITOR_KEY, created);
-    return created;
+    store.setItem(CONSENT_KEY, "accepted");
+    return store.getItem(CONSENT_KEY) === "accepted" ? visitorId : null;
   } catch {
     return null;
   }
 }
 
 function registerOnce(visitorId: string) {
-  let registration = registrations.get(visitorId);
-  if (!registration) {
-    registration = registerVisit(visitorId);
-    registrations.set(visitorId, registration);
+  const now = Date.now();
+  const existing = registrations.get(visitorId);
+  if (existing && (!existing.settled || now - existing.startedAt < REGISTRATION_CACHE_WINDOW_MS)) {
+    return existing.promise;
   }
-  return registration;
+  if (existing) registrations.delete(visitorId);
+
+  const entry: RegistrationEntry = { promise: registerVisit(visitorId), startedAt: now, settled: false };
+  registrations.set(visitorId, entry);
+  void entry.promise.then(
+    () => {
+      if (registrations.get(visitorId) === entry) entry.settled = true;
+    },
+    () => {
+      if (registrations.get(visitorId) === entry) registrations.delete(visitorId);
+    },
+  );
+  return entry.promise;
 }
 
 export function VisitorCounter() {
@@ -65,9 +98,11 @@ export function VisitorCounter() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [consent, setConsent] = useState<Consent>(readConsent);
+  const consentRef = useRef(consent);
   const [registrationUnavailable, setRegistrationUnavailable] = useState(false);
+  const [consentWarning, setConsentWarning] = useState("");
   const [storageUnavailable, setStorageUnavailable] = useState(
-    () => !canReadStorage() || (readConsent() === "accepted" && typeof crypto.randomUUID !== "function"),
+    () => !canReadStorage() || (readConsent() === "accepted" && (typeof crypto === "undefined" || typeof crypto.randomUUID !== "function")),
   );
   const readController = useRef<AbortController | null>(null);
   const configured = isApiConfigured();
@@ -115,7 +150,7 @@ export function VisitorCounter() {
 
       if (visitorId) {
         fetchVisitorStatus(controller.signal).then(async status => {
-          if (!active || controller.signal.aborted) return;
+          if (!active || controller.signal.aborted || consentRef.current !== "accepted") return;
           setCount(status.count);
           setLoading(false);
           if (!status.supportsBrowserRegistration) {
@@ -124,6 +159,7 @@ export function VisitorCounter() {
           }
 
           setRegistrationUnavailable(false);
+          if (consentRef.current !== "accepted") return;
           try {
             const result = await registerOnce(visitorId);
             if (active) setCount(result.count);
@@ -145,27 +181,58 @@ export function VisitorCounter() {
 
   function chooseConsent(next: Exclude<Consent, null>) {
     const store = storage();
+    if (next === "declined") {
+      consentRef.current = "declined";
+      setConsent("declined");
+      let consentSaved = false;
+      let visitorIdRemoved = false;
+      if (store) {
+        try {
+          store.setItem(CONSENT_KEY, "declined");
+          consentSaved = store.getItem(CONSENT_KEY) === "declined";
+        } catch {
+          consentSaved = false;
+        }
+        try {
+          store.removeItem(VISITOR_KEY);
+          visitorIdRemoved = store.getItem(VISITOR_KEY) === null;
+        } catch {
+          visitorIdRemoved = false;
+        }
+      }
+      setStorageUnavailable(!consentSaved || !visitorIdRemoved);
+      setConsentWarning(
+        !consentSaved
+          ? "Visit counting is off for this page, but the browser could not save your choice. It may not stay off after reload. Clear this site's stored data or disable browser storage to prevent a saved acceptance from being used."
+          : !visitorIdRemoved
+            ? "Your choice to keep visit counting off was saved, but the browser could not remove the saved browser ID."
+            : "",
+      );
+      return;
+    }
     if (!store) {
       setStorageUnavailable(true);
+      setConsentWarning("Your opt-in could not be saved. Visit counting remains off until browser storage is available.");
       return;
     }
     try {
-      if (next === "declined") {
-        store.removeItem(VISITOR_KEY);
-        store.setItem(CONSENT_KEY, next);
-      } else {
-        if (typeof crypto.randomUUID !== "function") throw new Error("Secure UUID generation is unavailable.");
-        const current = store.getItem(VISITOR_KEY);
-        const visitorId = current && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(current)
-          ? current
-          : crypto.randomUUID();
-        store.setItem(VISITOR_KEY, visitorId);
-        store.setItem(CONSENT_KEY, next);
+      if (typeof crypto === "undefined" || typeof crypto.randomUUID !== "function") {
+        throw new Error("Secure UUID generation is unavailable.");
+      }
+      const current = store.getItem(VISITOR_KEY);
+      const visitorId = current && VISITOR_ID_PATTERN.test(current) ? current : crypto.randomUUID();
+      store.setItem(VISITOR_KEY, visitorId);
+      store.setItem(CONSENT_KEY, next);
+      if (store.getItem(VISITOR_KEY) !== visitorId || store.getItem(CONSENT_KEY) !== next) {
+        throw new Error("Browser storage did not confirm the saved choice.");
       }
       setStorageUnavailable(false);
+      setConsentWarning("");
+      consentRef.current = next;
       setConsent(next);
     } catch {
       setStorageUnavailable(true);
+      setConsentWarning("Your opt-in could not be saved. Visit counting remains off until browser storage is available.");
     }
   }
 
@@ -176,14 +243,15 @@ export function VisitorCounter() {
         <span>{!configured ? "Recorded visits unavailable" : loading ? "Loading recorded visits" : count === null ? "Recorded visits unavailable" : `${count.toLocaleString()} recorded visits`}</span>
       </p>
       {consent === null && <div className="visitor-consent">
-        <p>Portfolio owner Jerome Ibon uses this for aggregate visit counting. Opt-in stores a random browser ID; the server keeps a pseudonymous HMAC-derived ID for 90 days after your last visit, so it is not fully anonymous. You can turn it off anytime. Privacy requests: <a href="mailto:jeysibn@gmail.com">jeysibn@gmail.com</a>.</p>
+        <p>Used for aggregate visit counting. Opt-in stores a random browser ID until you turn it off or clear site data; the server retains a pseudonymous HMAC record for 90 days of inactivity. Database cleanup may be delayed. Privacy: <a href="mailto:jeysibn@gmail.com">jeysibn@gmail.com</a>.</p>
         <button type="button" className="visitor-button" onClick={() => chooseConsent("accepted")}>Allow anonymous counting</button>
         <button type="button" className="visitor-text-button" onClick={() => chooseConsent("declined")}>Keep counting off</button>
       </div>}
       {consent === "accepted" && <button type="button" className="visitor-text-button" onClick={() => chooseConsent("declined")}>Turn off visit counting</button>}
       {consent === "declined" && <button type="button" className="visitor-text-button" onClick={() => chooseConsent("accepted")}>Enable anonymous counting</button>}
       {consent === "accepted" && registrationUnavailable && <p className="visitor-message" role="status">This counter service does not support browser registration yet. The public count is available; no visit was registered.</p>}
-      {storageUnavailable && <p className="visitor-message" role="status">Browser storage is unavailable. The public count can still be read, but this visit was not registered.</p>}
+      {storageUnavailable && <p className="visitor-message" role="status">Browser storage is unavailable. The public count remains available; registration requires a saved opt-in.</p>}
+      {consentWarning && <p className="visitor-message" role="status">{consentWarning}</p>}
       {error && <p role="alert">{error}</p>}
       {configured && error && <button type="button" className="visitor-button" disabled={loading} onClick={() => void refresh()}>Retry reading count</button>}
     </div>

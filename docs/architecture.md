@@ -29,7 +29,7 @@ flowchart LR
 ### Visitor registration and counting
 
 1. The portfolio displays the aggregate count using `GET /visits`. Registration starts only after the visitor explicitly enables anonymous counting. If consent is declined, storage is unavailable, or tracking is disabled, the page still reads and displays the aggregate count without creating or sending a browser identifier.
-2. On opt-in, the browser creates a cryptographically random UUID v4 with the Web Crypto API and stores it in first-party `localStorage`. Later visits reuse that ID. The visitor can disable tracking from the counter; doing so removes the browser ID and saved choice.
+2. On opt-in, the browser creates a cryptographically random UUID v4 with the Web Crypto API and stores it in first-party `localStorage`. Later visits reuse that ID. Opt-out immediately disables registration for the current page, stores a declined preference, and best-effort removes the browser ID. If storage blocks saving the preference or removing the ID, the interface warns that the choice may not persist across reloads.
 3. `POST /visits` sends `{ "visitorId": "<UUID v4>" }`. Lambda validates the shape, HMAC-SHA256 hashes it with the existing Terraform-managed secret, and uses `visitor#<digest>` as the DynamoDB key. Raw IDs are not stored or logged.
 4. A new browser or one whose `active_until` is at or before the current UTC time increments the existing `visitors.count` in the same DynamoDB transaction that writes visitor state. A visit inside the active window updates its history and extends the deadline without changing the aggregate. Conditional writes resolve concurrent requests.
 5. If POST fails, the page reads the aggregate with GET. Registration responses and GET responses use `Cache-Control: no-store`.
@@ -40,15 +40,15 @@ The existing table key is `id`. The `id = visitors` item and its historical coun
 
 | Attribute | Meaning |
 | --- | --- |
-| `first_seen_at` | First recorded visit; kept stable while the record exists. |
+| `first_seen_at` | First recorded visit in the current retained history period; reset when `expires_at <= now`, even if the item remains physically present. |
 | `last_seen_at` | Most recent accepted registration. |
 | `active_until` | Application eligibility deadline, set to the latest visit plus 86,400 seconds. This controls counting; DynamoDB TTL is not consulted. |
 | `page_loads` | Total accepted registrations observed for this browser record. |
 | `counted_visits` | Eligible visits that incremented the aggregate for this browser record. |
 | `is_returning` | True after a repeat registration has been observed. |
-| `expires_at` | DynamoDB TTL deadline, refreshed to 90 days after the latest registration. TTL deletion is asynchronous. |
+| `expires_at` | Logical history-retention deadline and DynamoDB TTL deadline, refreshed to 90 days after the latest registration. |
 
-UTC epoch seconds are convenient for comparisons; convert them to `Asia/Manila` when reviewing operational records. The record is retained while the browser returns at least once within 90 days. DynamoDB may physically delete an expired record later than its TTL deadline. There is no secondary index and no scan on public requests. Private operational review can scan the table; that is an off-path, potentially paginated read, not an analytics endpoint. Restrict AWS console and CLI permissions because records contain visit history and HMAC identifiers.
+UTC epoch seconds are convenient for comparisons; convert them to `Asia/Manila` when reviewing operational records. `active_until` determines whether a registration counts again after 24 hours. Independently, once `expires_at <= now`, the handler treats a still-present record as a new retained history period: it replaces `first_seen_at` and resets activity counters, returning status, and both deadlines while incrementing the aggregate atomically. A conditional write verifies the observed expiration so concurrent resets count once; if TTL deletes the item between read and transaction, the handler rereads and creates a first-visit record. DynamoDB physical TTL deletion remains asynchronous and can lag the logical deadline. There is no secondary index and no scan on public requests. Private operational review can scan the table; that is an off-path, potentially paginated read, not an analytics endpoint. Restrict AWS console and CLI permissions because records contain visit history and HMAC identifiers.
 
 An authorized operator can inspect recent records without exposing them publicly:
 
@@ -73,7 +73,7 @@ Tracking is off until affirmative opt-in. This is a conservative product choice:
 
 No data migration is required. The aggregate `visitors` item is not managed by Terraform and is not reset. Existing `ip#...` items are not mapped to browsers; TTL removes them eventually. The new handler writes `visitor#...` records. Enhanced `GET /visits` includes `registrationSupported: true`. The enhanced frontend checks this flag before sending an opted-in UUID registration. A legacy backend lacks this flag, so the enhanced frontend displays the aggregate with GET only and sends no POST. The enhanced backend accepts a legacy bodyless POST as a read-only compatibility request and returns `{ "counted": false, "count": n }`; it creates no record and performs no IP-derived tracking. Keep this low-risk compatibility path deliberately until a planned breaking API change after legacy clients are no longer supported. These mixed-version combinations preserve display but cause a temporary registration gap.
 
-Deploy the compatible backend first, verify it, then deploy the frontend. A backend-only rollback to the legacy implementation while enhanced clients remain cached/open is unsafe: the legacy backend ignores the UUID and could IP-track opted-in requests. Roll back the frontend first and allow cached/open pages to drain, or keep the enhanced backend until that is practical. Never run an unreviewed Terraform plan or apply; the [backend runbook](backend-cicd.md) describes the gated release and rollback.
+Deploy the compatible backend first, verify it, then deploy the frontend. Keep the enhanced backend in place for the default rollback and revert the frontend first. A backend-only rollback to the legacy implementation is privacy-sensitive: the capability GET and UUID POST are separate requests, so an enhanced page can POST after the rollback and the legacy backend may track by IP. Cached or already-open pages can continue to send requests; waiting for them to drain is not a complete guarantee. No registration-disable switch exists. These mixed-version releases also have a temporary registration gap for legacy clients. Never run an unreviewed Terraform plan or apply; the [backend runbook](backend-cicd.md) describes the gated release and rollback.
 
 ## Frontend deployment flow
 

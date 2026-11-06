@@ -133,6 +133,49 @@ def _new_visitor_transaction(key, now):
     }
 
 
+def _expired_visitor_transaction(key, now, item):
+    observed_expiry = item.get("expires_at")
+    put = {
+        "TableName": table.name,
+        "Item": {
+            "id": {"S": key},
+            "first_seen_at": {"N": str(now)},
+            "last_seen_at": {"N": str(now)},
+            "active_until": {"N": str(now + visit_window_seconds)},
+            "page_loads": {"N": "1"},
+            "counted_visits": {"N": "1"},
+            "is_returning": {"BOOL": False},
+            "expires_at": {"N": str(now + visitor_retention_seconds)},
+        },
+        "ExpressionAttributeNames": {"#id": "id", "#expiry": "expires_at"},
+    }
+    if observed_expiry is None:
+        put["ConditionExpression"] = "attribute_exists(#id) AND attribute_not_exists(#expiry)"
+    else:
+        put["ConditionExpression"] = (
+            "attribute_exists(#id) AND #expiry <= :now AND #expiry = :previous_expiry"
+        )
+        put["ExpressionAttributeValues"] = {
+            ":now": {"N": str(now)},
+            ":previous_expiry": {"N": str(int(observed_expiry))},
+        }
+    return {
+        "TransactItems": [
+            {"Put": put},
+            {
+                "Update": {
+                    "TableName": table.name,
+                    "Key": {"id": {"S": "visitors"}},
+                    "UpdateExpression": "SET #count = #count + :one",
+                    "ConditionExpression": "attribute_exists(#id)",
+                    "ExpressionAttributeNames": {"#count": "count", "#id": "id"},
+                    "ExpressionAttributeValues": {":one": {"N": "1"}},
+                }
+            },
+        ]
+    }
+
+
 def _active_visit_update(key, now, item):
     last_seen_at = int(item.get("last_seen_at", now))
     active_until = int(item.get("active_until", 0))
@@ -241,6 +284,21 @@ def register_visitor(visitor_id, now):
                 raise
 
         active_until = int(item.get("active_until", 0))
+        expires_at = int(item.get("expires_at", 0))
+        if expires_at <= now:
+            try:
+                _transact_write_items(_expired_visitor_transaction(key, now, item))
+                return True, False
+            except Exception as error:
+                if not _transaction_canceled(error):
+                    raise
+                reasons = _cancellation_reasons(error)
+                if len(reasons) > 1 and reasons[1].get("Code") == "ConditionalCheckFailed":
+                    raise CounterMissingError from error
+                if reasons and reasons[0].get("Code") == "ConditionalCheckFailed":
+                    continue
+                raise
+
         if active_until > now:
             try:
                 _active_visit_update(key, now, item)
