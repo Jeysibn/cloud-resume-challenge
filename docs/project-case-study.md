@@ -10,7 +10,7 @@
 
 I built and deployed a personal portfolio website using AWS to gain hands-on experience with cloud infrastructure, serverless applications, and basic DevOps practices.
 
-The website displays my portfolio and an aggregate visitor counter. Persistent browser recognition is managed in footer Privacy Settings; the proposed default automatically recognizes browsers unless they disable it, subject to a pending privacy review.
+The website displays my portfolio and an aggregate visitor counter. When the enhanced API and browser storage are available, the page automatically registers a browser UUID. The site has no visitor-facing recognition controls; the production privacy review remains a release consideration.
 
 I divided the project into two versions. In Version 1, I manually configured AWS resources through the Management Console to understand how the services work. In Version 2, I recreated the infrastructure using Terraform and introduced GitHub Actions for automated code testing and frontend deployment.
 
@@ -79,7 +79,7 @@ For backend changes, I run tests and manually deploy the updated Lambda package 
 
 Historical live testing verified the former manual counter. It is evidence for the old behavior only, not for the current browser-ID registration or rolling window.
 
-The counter reads the public aggregate independently from persistent recognition. The proposed automatic policy stores a random UUID in first-party localStorage; footer Privacy Settings lets visitors disable or enable recognition, and previous declined preferences remain honored. A build-time opt-in policy is available where affirmative consent is required. The server stores a keyed HMAC digest and limited activity metadata with a 90-day logical inactivity-retention deadline. Each recognized page load moves the separate 24-hour active deadline forward; visits after 24 hours of inactivity count again. DynamoDB TTL cleanup is asynchronous. Disabling removes the browser UUID when possible but does not immediately delete the server record. Browser identifiers recognize tokens, not people, and can be cleared, copied, blocked, or spoofed. The preserved aggregate spans the former IP-based and browser-based methods, so it is not a historical unique-browser count. The default automatic recognition design has not been legally cleared; see [architecture and privacy review](architecture.md#privacy-and-interpretation).
+The counter reads the public aggregate and automatically creates or reuses a random UUID in first-party localStorage when the enhanced API supports registration. Previous preference values are ignored, and there is no visitor-facing enable/disable control or opt-in build policy. The server stores a keyed HMAC digest and limited activity metadata with a 90-day logical inactivity-retention deadline. Each recognized page load moves the separate 24-hour active deadline forward; visits after 24 hours of inactivity count again. DynamoDB TTL cleanup is asynchronous. Browser identifiers recognize tokens, not people, and can be cleared, copied, blocked, or spoofed. The preserved aggregate spans the former IP-based and browser-based methods, so it is not a historical unique-browser count. The automatic recognition design requires an applicable privacy review; see [architecture and privacy review](architecture.md#privacy-and-interpretation).
 
 See the [validation record](validation.md#live-aws-evidence-from-november-1-2026) for historical live-test screenshots and the current local checks.
 

@@ -1,6 +1,6 @@
 # Validation and current status
 
-This page distinguishes historical checks from current local checks and live AWS operations. The visitor analytics enhancement is locally validated; no production deployment, production POST, Terraform apply, or resource modification has been performed.
+This page distinguishes historical checks from current local checks and live AWS operations. Checks recorded below apply to the source state and date shown; they do not validate later edits. No production deployment, production POST, Terraform apply, or resource modification has been performed for the current automatic-registration UI change.
 
 ## Local checks for the current source
 
@@ -33,7 +33,7 @@ Backend and frontend tests use mocks and do not modify AWS or the live counter. 
 
 ## Previous live validation (historical behavior)
 
-The following evidence predates the browser-ID enhancement and validated the former **Record My Visit** button flow. It does not prove the current opt-in registration, rolling window, logical retention reset, or TTL behavior.
+The following evidence predates the browser-ID enhancement and validated the former **Record My Visit** button flow. It does not prove the later opt-in implementation, rolling window, logical retention reset, or TTL behavior.
 
 ### Mission 9.1 — Previous Visitor Counter End-to-End Test
 
@@ -137,7 +137,7 @@ The logical-retention reset, consent failure handling, registration-cache change
 | `terraform fmt -check -recursive` from `infra/terraform` | Passed. |
 | `terraform validate -no-color` from `infra/terraform` | Passed. |
 
-The browser suite first detected the intentional privacy-notice text change against the old 1920px snapshot. The rendered result was inspected, the snapshot was refreshed, and the complete browser suite then passed. The PR Actions run after pushing the remediation is the remaining CI check; Terraform planning and authorized production verification remain release gates.
+The browser suite first detected the intentional privacy-notice text change against the old 1920px snapshot. The rendered result was inspected, the snapshot was refreshed, and the complete browser suite then passed for that source state. The PR Actions run after pushing the remediation was the remaining CI check at that time; Terraform planning and authorized production verification remained release gates.
 
 ## PR #14 release-preparation follow-up on November 7, 2026
 
@@ -156,6 +156,18 @@ The final follow-up corrected the Playwright opt-in assertion to wait for its as
 | `git diff --check` | Passed. |
 
 AWS credentials were available for read-only identity and deployment-role inspection, but `TF_VAR_ip_hash_secret` was not available in the environment. No Terraform plan was generated; the production plan remains unverified. GitHub Actions run 42262396194 passed frontend and backend CI for its recorded head, with the deploy job skipped. Cleanup changes require a new exact-head CI run. As observed on November 7, the repository had no `main` branch protection/ruleset or Actions environment approval; the only production workflow is manually dispatched on `main` and its deployment role is scoped to frontend S3 uploads and CloudFront invalidation. See [deployment runbook](deployment-runbook.md#workflow-and-aws-access-boundary).
+
+## Automatic registration UI update on November 7, 2026
+
+The footer Privacy Settings controls and saved-preference gating were removed. The frontend now automatically registers a browser when the enhanced API advertises support and localStorage is available; previous `declined` preference values no longer disable registration. The deployment workflow no longer passes a build-time opt-in policy. Project descriptions, architecture guidance, and deployment instructions were updated to match. This change has not been deployed.
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed. |
+| Parse `content/portfolio.json` as JSON | Passed. |
+| Frontend typecheck | Not run: dependencies are absent (`tsc` not found). |
+| Frontend tests and browser suite | Not run for this update. |
+| Production POST, deployment, Terraform plan/apply, or AWS resource change | Not performed. |
 
 ## Version 1 history
 

@@ -26,7 +26,7 @@ npm ci
 cp .env.example .env.local
 ```
 
-The example file sets the public visitor API URL. The counter reads the live aggregate, but registration stays off unless you explicitly opt in. If you opt in during local development, the live API may update the production count for that browser. Frontend unit tests mock the API and do not change the live count. Keep AWS keys and other secrets out of `VITE_*` variables because Vite includes them in the browser code.
+The example file sets the public visitor API URL. The counter reads the aggregate and automatically registers a browser when the API supports it. If you run the site locally with the production API URL, it may update the production count. Frontend unit tests mock the API and do not change the live count. Keep AWS keys and other secrets out of `VITE_*` variables because Vite includes them in the browser code.
 
 Start the development server and open the local address printed by Vite, usually `http://localhost:5173`:
 
@@ -92,7 +92,7 @@ Terraform changes can modify live cloud resources. Confirm the AWS account, crea
 | Website bucket | `cloud-resume-v2-website-665514296439-ap-southeast-2` |
 | DynamoDB table | `cloud-resume-v2-visitor-counter` |
 
-Tracking starts only after opt-in. The browser sends a random UUID v4, and Lambda stores a server-side HMAC digest. Each registration refreshes a rolling 24-hour inactivity deadline; only after that deadline does the aggregate increase. This estimates recorded visits, not individual people. The aggregate preserves the earlier IP-based history, so it is not a historical unique-browser count. See [how the visitor counter works](frontend/app/AWS-INTEGRATION.md) for limits and privacy details.
+The counter automatically stores a random browser UUID v4 in first-party local storage and sends it to the visitor API when supported; Lambda stores a server-side HMAC digest. Each registration refreshes a rolling 24-hour inactivity deadline; only after that deadline does the aggregate increase. This estimates recorded visits, not individual people. The aggregate preserves the earlier IP-based history, so it is not a historical unique-browser count. See [how the visitor counter works](frontend/app/AWS-INTEGRATION.md) for limits and privacy details.
 
 ## More documentation
 

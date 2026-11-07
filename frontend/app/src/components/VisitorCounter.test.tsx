@@ -49,11 +49,11 @@ it("does not track when localStorage is blocked", async () => {
   expect(registerVisit).not.toHaveBeenCalled();
 });
 
-it("honors a legacy saved decline without showing consent controls", async () => {
+it("automatically registers even when an old decline preference is still stored", async () => {
   window.localStorage.setItem("jeysibn.visitor-counting-consent.v1", "declined");
   render(<VisitorCounter />);
-  await screen.findByText("42 recorded visits");
-  expect(registerVisit).not.toHaveBeenCalled();
+  await screen.findByText("43 recorded visits");
+  expect(registerVisit).toHaveBeenCalledTimes(1);
   expect(screen.queryByRole("button")).not.toBeInTheDocument();
 });
 
