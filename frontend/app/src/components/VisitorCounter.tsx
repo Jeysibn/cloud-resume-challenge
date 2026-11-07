@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchVisitorStatus, isApiConfigured, registerVisit } from "../api";
-import { CONSENT_KEY, PREFERENCE_EVENT, recognitionAllowed, VISITOR_KEY } from "../visitorRecognition";
+const VISITOR_KEY = "jeysibn.visitor-id.v1";
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const registrations = new Map<string, Promise<Awaited<ReturnType<typeof registerVisit>>>>();
 
 function visitorId(): string | null {
   try {
-    if (!recognitionAllowed()) return null;
     const existing = window.localStorage.getItem(VISITOR_KEY);
     if (existing && UUID_V4.test(existing)) return existing;
     if (typeof crypto === "undefined" || !crypto.randomUUID) return null;
@@ -35,7 +34,6 @@ export function VisitorCounter() {
   const [count, setCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(configured);
   const [error, setError] = useState(false);
-  const [preferenceRevision, setPreferenceRevision] = useState(0);
 
   const loadCount = useCallback(async (signal?: AbortSignal, register = true) => {
     try {
@@ -61,20 +59,12 @@ export function VisitorCounter() {
   }, []);
 
   useEffect(() => {
-    const onPreferenceChange = () => setPreferenceRevision(revision => revision + 1);
-    window.addEventListener(PREFERENCE_EVENT, onPreferenceChange);
-    const onStorageChange = (event: StorageEvent) => {
-      if (event.key === CONSENT_KEY || event.key === VISITOR_KEY || event.key === null) onPreferenceChange();
-    };
-    window.addEventListener("storage", onStorageChange);
     const controller = configured ? new AbortController() : null;
     if (controller) void Promise.resolve().then(() => loadCount(controller.signal));
     return () => {
       controller?.abort();
-      window.removeEventListener(PREFERENCE_EVENT, onPreferenceChange);
-      window.removeEventListener("storage", onStorageChange);
     };
-  }, [configured, loadCount, preferenceRevision]);
+  }, [configured, loadCount]);
 
   function retryCount() {
     setLoading(true);

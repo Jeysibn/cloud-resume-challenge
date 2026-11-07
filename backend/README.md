@@ -22,7 +22,7 @@ The new-visitor and expired-visitor paths transact the visitor write with the ag
 
 The current Lambda environment takes `TABLE_NAME`, `VISITOR_ID_HMAC_SECRET`, `VISIT_WINDOW_SECONDS`, and `VISITOR_RETENTION_SECONDS`. The existing sensitive Terraform variable `ip_hash_secret` retains its existing value and is passed as `VISITOR_ID_HMAC_SECRET`; this avoids rotating the production secret during rollout. Terraform state and Lambda configuration contain that secret, so access must be restricted.
 
-For rollout compatibility, legacy frontends can still read the count, but their bodyless POST is read-only. Enhanced frontends require the GET capability marker before sending opted-in UUID registrations. Thus mixed versions do not fall back to IP-based tracking and may temporarily leave visits unregistered. See the staged release and rollback requirements in [backend-cicd.md](../docs/backend-cicd.md).
+For rollout compatibility, legacy frontends can still read the count, but their bodyless POST is read-only. Enhanced frontends require the GET capability marker before automatically sending UUID registrations. Thus mixed versions do not fall back to IP-based tracking and may temporarily leave visits unregistered. See the staged release and rollback requirements in [backend-cicd.md](../docs/backend-cicd.md).
 
 ## Private review, retention, and limits
 
@@ -30,7 +30,7 @@ Authorized AWS operators can inspect `visitor#` items directly in the DynamoDB c
 
 The browser identifier is a random token, not a person identity. It can be cleared, copied, blocked, or spoofed; callers can fabricate IDs; the API is not bot protection. `page_loads` and `counted_visits` describe a retained browser record, while the aggregate is historical recorded visits spanning the previous IP-based and new browser-based methods. It is not a historical total of unique browsers.
 
-Tracking starts only after affirmative opt-in. Without consent, opt-out, unavailable storage, or a cleared identifier, the public count remains readable. This conservative approach reflects the need to disclose collection and avoid assuming consent; applicable legal bases and terminal-storage rules depend on jurisdiction and circumstances. See the sources and privacy design note in [architecture.md](../docs/architecture.md#privacy-and-interpretation).
+Enhanced frontend builds automatically register a browser when the backend advertises support and localStorage is available. Without browser storage, the public count remains readable and registration is skipped. Automatic UUID creation and use still require review of applicable notice, legal basis, consent, and retention duties; see the sources and privacy design note in [architecture.md](../docs/architecture.md#privacy-and-interpretation).
 
 ## Local checks and package
 

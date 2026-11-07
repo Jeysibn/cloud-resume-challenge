@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="architecture-title architecture-desc">
   <title id="architecture-title">Runtime architecture</title>
-  <desc id="architecture-desc">CloudFront serves the React site from private Amazon S3 using Origin Access Control. The counter reads the aggregate with GET /visits. Only after opt-in does the browser send a random UUID to API Gateway; Python Lambda stores an HMAC-SHA256 digest and atomically updates private browser history with the historical aggregate. Each valid visit refreshes a rolling 24-hour inactivity deadline. After 90 days without activity, the next registration starts fresh history even if asynchronous DynamoDB TTL cleanup has not removed the record. The total preserves earlier IP-based counts and is not a count of unique people. CloudWatch stores Lambda logs.</desc>
+  <desc id="architecture-desc">CloudFront serves the React site from private Amazon S3 using Origin Access Control. The counter reads the aggregate with GET /visits. When the API supports registration, the browser automatically sends a random UUID to API Gateway; Python Lambda stores an HMAC-SHA256 digest and atomically updates private browser history with the historical aggregate. Each valid visit refreshes a rolling 24-hour inactivity deadline. After 90 days without activity, the next registration starts fresh history even if asynchronous DynamoDB TTL cleanup has not removed the record. The total preserves earlier IP-based counts and is not a count of unique people. CloudWatch stores Lambda logs.</desc>
   <defs>
     <style>
       .title{font:600 51px system-ui, sans-serif;fill:#171912}
@@ -39,7 +39,7 @@
 <path class="edge" d="M372 334 H466"/>
 <path class="edge" d="M761 334 H855"/>
 <rect x="80" y="456" width="1440" height="305" rx="8" fill="none" stroke="#B8B2A6" stroke-width="2"/>
-<text x="100" y="487" class="tag">VISITOR COUNTER · OPT-IN BROWSER REGISTRATION</text>
+<text x="100" y="487" class="tag">VISITOR COUNTER · AUTOMATIC BROWSER REGISTRATION</text>
 <rect x="110" y="531" width="270" height="135" rx="9" fill="#F8F5EF" stroke="#275D57" stroke-width="2"/>
 <rect x="110" y="531" width="7" height="135" rx="3" fill="#275D57"/>
 <text x="136" y="566" class="tag">GET / POST</text>
@@ -64,8 +64,8 @@
 <path class="edge" d="M759 599 H860"/>
 <path class="edge" d="M1140 599 H1235"/>
 <path class="edge" d="M241 397 V457 H245 V531"/>
-<text x="275" y="447" class="detail">GET count · POST after opt-in</text>
-<text x="110" y="693" class="note">GET /visits displays the aggregate; POST /visits sends a UUID only after opt-in.</text>
+<text x="275" y="447" class="detail">GET count · automatic POST</text>
+<text x="110" y="693" class="note">GET /visits displays the aggregate; POST /visits automatically sends a UUID when supported.</text>
 <text x="110" y="716" class="note">Lambda stores an HMAC digest; DynamoDB atomically updates browser history and the aggregate.</text>
 <text x="110" y="739" class="note">Rolling 24h activity, 90d history retention, delayed TTL cleanup. Total includes historical IP counts.</text>
 

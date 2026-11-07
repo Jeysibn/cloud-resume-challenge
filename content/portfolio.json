@@ -214,7 +214,7 @@
       "repositoryUrl": "https://github.com/Jeysibn/cloud-resume-challenge",
       "liveUrl": "https://jeysibn.dev/",
       "preview": {
-        "summary": "A React portfolio on private S3 and CloudFront, with opt-in anonymous browser visit counting through API Gateway, Lambda, and DynamoDB.",
+        "summary": "A React portfolio on private S3 and CloudFront, with automatic anonymous browser visit counting through API Gateway, Lambda, and DynamoDB.",
         "primaryOutcome": "Rebuilt V1 with Terraform; added beginner guides for setup, architecture, and deployment.",
         "flow": {
           "label": "CloudFront → API Gateway → Lambda → DynamoDB",
@@ -224,7 +224,7 @@
             "LAMBDA",
             "DATA"
           ],
-          "accessible": "CloudFront serves the React website from private S3; after consent, the browser sends a random ID to API Gateway, which invokes Lambda to update private browser history and the DynamoDB aggregate."
+          "accessible": "CloudFront serves the React website from private S3; the browser automatically sends a random ID to API Gateway, which invokes Lambda to update private browser history and the DynamoDB aggregate."
         },
         "technologies": [
           "AWS",
@@ -235,17 +235,17 @@
         ]
       },
       "details": {
-        "summary": "Version 2 is live at jeysibn.dev. A React and TypeScript portfolio served through private Amazon S3 and CloudFront, with opt-in anonymous browser visit counting through API Gateway, Python Lambda, and DynamoDB. A rolling 24-hour inactivity window controls aggregate increments; the total retains historical counts from the previous counter implementation. V1 was built manually in an older AWS project that is now closed; V2 is managed through Terraform.",
+        "summary": "Version 2 is live at jeysibn.dev. A React and TypeScript portfolio served through private Amazon S3 and CloudFront, with automatic anonymous browser visit counting through API Gateway, Python Lambda, and DynamoDB. A rolling 24-hour inactivity window controls aggregate increments; the total retains historical counts from the previous counter implementation. V1 was built manually in an older AWS project that is now closed; V2 is managed through Terraform.",
         "purpose": "Build a real, understandable serverless AWS deployment, then demonstrate the transition from manual console provisioning to reproducible infrastructure and controlled CI/CD.",
         "outcomes": [
           "Delivered the portfolio over HTTPS from CloudFront using Origin Access Control to keep the S3 website bucket private.",
-          "Implemented opt-in anonymous browser registration through API Gateway, Python Lambda, and DynamoDB. The browser sends a random UUID v4; the backend stores an HMAC-SHA256 digest, refreshes a rolling 24-hour inactivity deadline, and retains private visit history for 90 days after activity.",
+          "Implemented automatic anonymous browser registration through API Gateway, Python Lambda, and DynamoDB. The browser sends a random UUID v4 when the API supports registration; the backend stores an HMAC-SHA256 digest, refreshes a rolling 24-hour inactivity deadline, and retains private visit history for 90 days after activity.",
           "Defined V2 AWS infrastructure in Terraform with separate remote state, allowing changes to be reviewed as plans.",
           "Added GitHub Actions pull-request checks and OIDC-based frontend deployment on manual workflow dispatch after merge.",
           "Reorganized the documentation for new contributors, with a reading path for local setup, architecture, testing, and deployment."
         ],
         "highlights": [
-          "GET /visits reads the public aggregate without registering. POST /visits sends a random browser UUID only after explicit opt-in and capability detection.",
+          "GET /visits reads the public aggregate. When the API advertises registration support, the frontend automatically sends a random browser UUID with POST /visits.",
           "A DynamoDB transaction atomically updates visitor history and the aggregate for a new or eligible visit. Activity inside the rolling 24-hour window refreshes its deadline without incrementing the aggregate.",
           "After 90 days without activity, a returning browser starts a fresh retained history period even if DynamoDB TTL has not physically deleted its old item. The historical aggregate is preserved.",
           "This recognizes a browser token, not a person. IDs can be cleared, copied, or spoofed; the public API is not bot protection and does not count unique people.",
@@ -308,10 +308,10 @@
             "id": "portfolio-runtime",
             "title": "AWS runtime architecture",
             "svg": "/architecture/portfolio/runtime.svg",
-            "description": "AWS V2 flow: after visitor consent, the browser registers a random UUID. API Gateway invokes Python Lambda to store a server-side HMAC digest and atomically update visitor history and the aggregate.",
+            "description": "AWS V2 flow: the browser automatically registers a random UUID when the API supports it. API Gateway invokes Python Lambda to store a server-side HMAC digest and atomically update visitor history and the aggregate.",
             "summary": [
               "CloudFront serves the React and TypeScript build from a private S3 bucket via Origin Access Control over HTTPS.",
-              "GET /visits displays the aggregate without tracking. POST /visits sends a UUID only after opt-in and backend capability detection; failed registration falls back to GET.",
+              "GET /visits displays the aggregate. POST /visits automatically sends a UUID when backend capability is detected; failed registration leaves the GET count visible.",
               "Lambda stores an HMAC-SHA256 digest of the UUID. DynamoDB atomically records first/latest activity, page loads, eligible counted visits, return status, and separate 24-hour activity and 90-day retention deadlines.",
               "Expired history is reset on the next registration while DynamoDB TTL cleanup remains asynchronous. The total preserves historical counts and is not a count of unique people. CloudWatch stores Lambda logs."
             ]
@@ -335,7 +335,7 @@
         "experience_boundary": "This is a personal learning project, not professional employment experience or a high-scale production service.",
         "architecture": {
           "frontend": "React, TypeScript and Vite production build hosted in a private Amazon S3 bucket. Amazon CloudFront serves it via Origin Access Control at https://jeysibn.dev/.",
-          "backend": "API Gateway HTTP API routes GET and POST /visits to a Python 3.14 AWS Lambda handler. The frontend reads the count with GET and sends a UUID POST only after explicit opt-in and capability detection; failed registration falls back to GET.",
+          "backend": "API Gateway HTTP API routes GET and POST /visits to a Python 3.14 AWS Lambda handler. The frontend reads the count with GET and automatically sends a UUID POST when registration capability is detected; failed registration leaves the GET count visible.",
           "state": "Amazon DynamoDB stores the existing aggregate and private browser-history records keyed by a server-side HMAC digest. Conditional writes and transactions enforce rolling 24-hour counting and logically reset history after 90 days of inactivity; asynchronous TTL performs eventual physical deletion. The aggregate preserves historical totals from the previous implementation.",
           "infrastructure": "Terraform manages V2 resources in ap-southeast-2 and uses separate remote S3 state. V1 state from the closed manual project is not reused.",
           "delivery": "GitHub Actions validates frontend changes on pull requests. After merge, a manually dispatched frontend workflow authenticates using AWS OIDC, uploads assets then index.html to S3, and invalidates CloudFront. Backend CI runs tests, syntax checks and ZIP checks; Lambda deployment is manual through Terraform.",
@@ -351,10 +351,10 @@
         "ci_cd": "Frontend CI checks typecheck, lint, unit tests and build for pull requests. Manual GitHub Actions workflow deploys frontend after merge using AWS OIDC. Backend CI validates Python source and ZIP; Lambda updates deploy manually through Terraform.",
         "infrastructure": "Private Amazon S3 website bucket, CloudFront with OAC and custom domain, API Gateway HTTP API, Python AWS Lambda, DynamoDB, CloudWatch, Terraform and GitHub Actions in AWS ap-southeast-2.",
         "observability": "CloudWatch logs provide basic evidence that Lambda processed counter requests and help diagnose errors.",
-        "data_storage": "DynamoDB stores the cumulative counter and HMAC-SHA256 digests derived from random browser UUIDs after opt-in. Visitor records track first/latest registration, page loads, counted visits, returning status, a rolling 24-hour activity deadline, and a 90-day history-retention deadline. History resets transactionally when its logical deadline passes; DynamoDB TTL eventually deletes inactive records. The aggregate preserves historical IP-based totals and is not a count of unique people.",
+        "data_storage": "DynamoDB stores the cumulative counter and HMAC-SHA256 digests derived from random browser UUIDs. Visitor records track first/latest registration, page loads, counted visits, returning status, a rolling 24-hour activity deadline, and a 90-day history-retention deadline. History resets transactionally when its logical deadline passes; DynamoDB TTL eventually deletes inactive records. The aggregate preserves historical IP-based totals and is not a count of unique people.",
         "engineering_decisions": [
           "Built V1 manually to understand AWS services before rebuilding the same core system as Terraform-managed V2.",
-          "Made browser registration explicit opt-in and retained a read-only GET path. Backend capability checks prevent the enhanced frontend from sending IDs to an older backend.",
+          "Automates browser registration when the enhanced backend advertises support, while retaining GET for the aggregate display. Backend capability checks prevent the enhanced frontend from sending IDs to an older backend.",
           "Reserved frontend deployment for a manual post-merge action and backend deployment for manual review of a Terraform plan.",
           "Organized the documentation around a beginner reading path and separated current local validation from historical live AWS evidence."
         ],
@@ -365,7 +365,7 @@
         ],
         "limitations": [
           "The counter recognizes anonymous browser tokens, not people. Browser IDs can be cleared, copied, or spoofed; the public API is unauthenticated and does not prevent automated traffic.",
-          "The browser ID remains in first-party local storage until opt-out or site-data clearing. After 90 days without a visit, the backend resets retained history on the next request; physical DynamoDB TTL deletion can lag that deadline.",
+          "The browser ID remains in first-party local storage until site data is cleared. After 90 days without a visit, the backend resets retained history on the next request; physical DynamoDB TTL deletion can lag that deadline.",
           "CORS is not backend authorization or protection from scripted requests.",
           "The V1 AWS environment is closed and not live.",
           "Backend Lambda updates are not automatically deployed from GitHub Actions."

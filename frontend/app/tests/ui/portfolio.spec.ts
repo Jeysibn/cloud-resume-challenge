@@ -455,13 +455,14 @@ test.describe("mobile portfolio interactions", () => {
     await expectNoHorizontalOverflow(page);
   });
 
-  test("shows the public count in the hero without tracking before opt-in", async ({ page }) => {
+  test("shows the public count in the hero and registers automatically", async ({ page }) => {
     const counter = page.locator(".visitor-counter");
     await expect(counter.getByRole("status")).toHaveText("42 recorded visits");
     await expect(counter).toBeVisible();
     await expect(page.locator(".site-footer .visitor-counter")).toHaveCount(0);
-    await expect(counter.getByRole("button", { name: "Allow anonymous counting" })).toBeVisible();
-    expect(publicApiStubs.get(page)?.methods).toEqual(["GET"]);
+    await expect(counter.getByRole("button")).toHaveCount(0);
+    await expect.poll(() => publicApiStubs.get(page)?.methods).toEqual(["GET", "POST"]);
+    await expect(page.getByText("Privacy Settings")).toHaveCount(0);
     expect((await new AxeBuilder({ page }).include(".visitor-counter").analyze()).violations).toEqual([]);
   });
 
@@ -479,26 +480,26 @@ test.describe("mobile portfolio interactions", () => {
     }
   });
 
-  test("registers only after opt-in, keeps a stable UUID and allows opt-out", async ({ page }) => {
-    const counter = page.locator(".visitor-counter");
-    await counter.getByRole("button", { name: "Allow anonymous counting" }).click();
-    await expect(counter.getByRole("button", { name: "Turn off visit counting" })).toBeVisible();
+  test("registers automatically and reuses a stable UUID", async ({ page }) => {
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("jeysibn.visitor-id.v1"))).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
     const visitorId = await page.evaluate(() => localStorage.getItem("jeysibn.visitor-id.v1"));
     expect(visitorId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-    await expect.poll(() => publicApiStubs.get(page)?.methods).toEqual(["GET", "GET", "POST"]);
-    await counter.getByRole("button", { name: "Turn off visit counting" }).click();
-    await expect(counter.getByRole("button", { name: "Enable anonymous counting" })).toBeVisible();
-    expect(await page.evaluate(() => localStorage.getItem("jeysibn.visitor-id.v1"))).toBeNull();
+    await expect.poll(() => publicApiStubs.get(page)?.methods).toEqual(["GET", "POST"]);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect.poll(() => publicApiStubs.get(page)?.methods).toEqual(["GET", "POST", "GET", "POST"]);
+    expect(await page.evaluate(() => localStorage.getItem("jeysibn.visitor-id.v1"))).toBe(visitorId);
   });
 
-  test("falls back to GET when an opted-in registration fails", async ({ page }) => {
+  test("keeps the GET count visible when automatic registration fails", async ({ page }) => {
     const stub = publicApiStubs.get(page)!;
     stub.methods.length = 0;
     stub.failNextPost = true;
     const counter = page.locator(".visitor-counter");
-    await counter.getByRole("button", { name: "Allow anonymous counting" }).click();
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(counter.getByRole("status")).toHaveText("42 recorded visits");
-    await expect.poll(() => stub.methods).toEqual(["GET", "GET", "POST", "GET"]);
+    await expect.poll(() => stub.methods).toEqual(["GET", "POST"]);
     expect((await new AxeBuilder({ page }).include(".visitor-counter").analyze()).violations).toEqual([]);
   });
 
